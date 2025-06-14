@@ -2,7 +2,7 @@
 export function WavyBackground() {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-warm-orange-50 via-pastel-green-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20"></div>
+      <div className="absolute inset-0 animated-soft-gradient"></div>
       
       {/* Animated waves */}
       <svg
@@ -19,13 +19,13 @@ export function WavyBackground() {
         </defs>
         <path
           fill="url(#wave-gradient-1)"
-          d="M0,160L48,181.3C96,203,192,245,288,250.7C384,256,480,224,576,192C672,160,768,128,864,133.3C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+          d="M0,224L48,218.7C96,213,192,203,288,186.7C384,171,480,149,576,165.3C672,181,768,235,864,240C960,245,1056,203,1152,181.3C1248,160,1344,160,1392,160L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
         >
           <animateTransform
             attributeName="transform"
             type="translate"
-            values="0 0; -50 0; 0 0"
-            dur="12s"
+            values="0 0; 20 -10; 0 0"
+            dur="18s"
             repeatCount="indefinite"
           />
         </path>
@@ -44,29 +44,66 @@ export function WavyBackground() {
         </defs>
         <path
           fill="url(#wave-gradient-2)"
-          d="M0,224L48,208C96,192,192,160,288,170.7C384,181,480,235,576,229.3C672,224,768,160,864,149.3C960,139,1056,181,1152,202.7C1248,224,1344,224,1392,224L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+          d="M0,128L48,144C96,160,192,192,288,197.3C384,203,480,181,576,176C672,171,768,181,864,197.3C960,213,1056,235,1152,218.7C1248,203,1344,149,1392,122.7L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
         >
            <animateTransform
             attributeName="transform"
             type="translate"
-            values="0 0; 50 0; 0 0"
-            dur="15s"
+            values="0 0; -30 15; 0 0"
+            dur="25s"
+            repeatCount="indefinite"
+          />
+        </path>
+      </svg>
+      <svg
+        className="absolute bottom-0 left-0 w-full h-96 opacity-10"
+        viewBox="0 0 1440 320"
+        preserveAspectRatio="none"
+      >
+        <defs>
+           <linearGradient id="wave-gradient-3" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#fef9c3" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="#f8b86d" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#86efac" stopOpacity="0.4" />
+          </linearGradient>
+        </defs>
+        <path
+          fill="url(#wave-gradient-3)"
+          d="M0,192L40,181.3C80,171,160,149,240,149.3C320,149,400,171,480,197.3C560,224,640,256,720,250.7C800,245,880,203,960,186.7C1040,171,1120,181,1200,197.3C1280,213,1360,235,1400,245.3L1440,256L1440,320L1400,320C1360,320,1280,320,1200,320C1120,320,1040,320,960,320C880,320,800,320,720,320C640,320,560,320,480,320C400,320,320,320,240,320C160,320,80,320,40,320L0,320Z"
+        >
+           <animateTransform
+            attributeName="transform"
+            type="translate"
+            values="-50 0; 50 0; -50 0"
+            dur="30s"
             repeatCount="indefinite"
           />
         </path>
       </svg>
 
       {/* Floating particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(30)].map((_, i) => (
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(40)].map((_, i) => (
           <div
-            key={i}
-            className="absolute w-2 h-2 bg-warm-orange-400 rounded-full opacity-20 animate-pulse"
+            key={`particle-${i}`}
+            className="absolute w-2 h-2 bg-warm-orange-300 rounded-full opacity-30 animate-float"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${5 + Math.random() * 5}s`,
+              animationDelay: `${Math.random() * 10}s`,
+              animationDuration: `${10 + Math.random() * 10}s`,
+            }}
+          />
+        ))}
+        {[...Array(60)].map((_, i) => (
+          <div
+            key={`speck-${i}`}
+            className="absolute w-1 h-1 bg-pastel-green-300 rounded-full opacity-40 animate-pulse-slow"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 12}s`,
+              animationDuration: `${5 + Math.random() * 7}s`,
             }}
           />
         ))}
