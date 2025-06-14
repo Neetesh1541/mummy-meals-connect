@@ -23,6 +23,11 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error("User not found");
 
+    const { shipping_details } = await req.json();
+    if (!shipping_details) {
+        throw new Error("Shipping details are required");
+    }
+
     const { data: cartItems, error: cartError } = await supabaseClient.rpc('get_cart_items', {
       user_id: user.id
     });
@@ -53,6 +58,8 @@ serve(async (req) => {
       cancel_url: `${Deno.env.get("SUPABASE_URL")!.replace('.co', '.app')}/payment-cancel`,
       metadata: {
         user_id: user.id,
+        shipping_details: JSON.stringify(shipping_details),
+        customer_phone: shipping_details.phone
       }
     });
 

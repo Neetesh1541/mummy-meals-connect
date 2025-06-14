@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +6,7 @@ import { ShoppingCart, Minus, Plus, Trash2, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { CheckoutDialog } from "./CheckoutDialog";
 
 interface CartItemWithMenu {
   id: string;
@@ -27,6 +27,7 @@ export function CartSidebar() {
   const { toast } = useToast();
   const [cartItems, setCartItems] = useState<CartItemWithMenu[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -124,11 +125,25 @@ export function CartSidebar() {
     }
   };
 
-  const checkout = async () => {
+  const checkout = async (address: any) => {
     if (!user) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout-session');
+      const shipping_details = {
+        name: address.fullName,
+        phone: address.phone,
+        address: {
+          line1: address.street,
+          city: address.city,
+          state: address.state,
+          postal_code: address.zip,
+          country: 'IN',
+        },
+      };
+
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { shipping_details }
+      });
       
       if (error) throw error;
 
@@ -150,6 +165,7 @@ export function CartSidebar() {
       });
     } finally {
       setLoading(false);
+      setIsCheckoutOpen(false);
     }
   };
 
@@ -225,16 +241,22 @@ export function CartSidebar() {
             </div>
             
             <Button
-              onClick={checkout}
-              disabled={loading || cartItems.length === 0}
+              onClick={() => setIsCheckoutOpen(true)}
+              disabled={cartItems.length === 0}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
             >
               <CreditCard className="h-4 w-4 mr-2" />
-              {loading ? "Processing..." : "Checkout"}
+              Checkout
             </Button>
           </div>
         </div>
       )}
+      <CheckoutDialog 
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        onCheckout={checkout}
+        loading={loading}
+      />
     </div>
   );
 }

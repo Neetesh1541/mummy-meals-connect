@@ -90,33 +90,39 @@ export type Database = {
         Row: {
           created_at: string | null
           customer_id: string | null
+          customer_phone: string | null
           delivery_partner_id: string | null
           id: string
           menu_id: string | null
           mom_id: string | null
           quantity: number | null
+          shipping_details: Json | null
           status: string | null
           total_amount: number | null
         }
         Insert: {
           created_at?: string | null
           customer_id?: string | null
+          customer_phone?: string | null
           delivery_partner_id?: string | null
           id?: string
           menu_id?: string | null
           mom_id?: string | null
           quantity?: number | null
+          shipping_details?: Json | null
           status?: string | null
           total_amount?: number | null
         }
         Update: {
           created_at?: string | null
           customer_id?: string | null
+          customer_phone?: string | null
           delivery_partner_id?: string | null
           id?: string
           menu_id?: string | null
           mom_id?: string | null
           quantity?: number | null
+          shipping_details?: Json | null
           status?: string | null
           total_amount?: number | null
         }
@@ -300,7 +306,13 @@ export type Database = {
         Returns: undefined
       }
       create_orders_from_cart: {
-        Args: { p_customer_id: string }
+        Args:
+          | { p_customer_id: string }
+          | {
+              p_customer_id: string
+              p_shipping_details: Json
+              p_customer_phone: string
+            }
         Returns: undefined
       }
       custom_access_token_hook: {
