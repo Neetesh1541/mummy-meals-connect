@@ -35,7 +35,7 @@ serve(async (req) => {
       );
 
       const { error: rpcError } = await supabaseAdmin.rpc('create_orders_from_cart', {
-        customer_id: userId,
+        p_customer_id: userId,
       });
 
       if (rpcError) throw rpcError;

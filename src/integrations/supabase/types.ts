@@ -288,7 +288,11 @@ export type Database = {
     }
     Functions: {
       add_to_cart: {
-        Args: { customer_id: string; menu_item_id: string; quantity: number }
+        Args: {
+          p_customer_id: string
+          p_menu_item_id: string
+          p_quantity: number
+        }
         Returns: undefined
       }
       clear_cart: {
@@ -296,7 +300,7 @@ export type Database = {
         Returns: undefined
       }
       create_orders_from_cart: {
-        Args: { customer_id: string }
+        Args: { p_customer_id: string }
         Returns: undefined
       }
       custom_access_token_hook: {
@@ -330,10 +334,10 @@ export type Database = {
       }
       submit_feedback: {
         Args: {
-          order_id: string
-          customer_id: string
-          rating_value: number
-          comment_text?: string
+          p_order_id: string
+          p_customer_id: string
+          p_rating_value: number
+          p_comment_text?: string
         }
         Returns: undefined
       }

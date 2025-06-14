@@ -36,7 +36,25 @@ export function MenuBrowser() {
     if (user) {
       fetchMenuItems();
       fetchCartItems();
-      subscribeToMenuChanges();
+
+      const channel = supabase
+        .channel('menu-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'menu',
+          },
+          () => {
+            fetchMenuItems();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
@@ -83,34 +101,13 @@ export function MenuBrowser() {
     }
   };
 
-  const subscribeToMenuChanges = () => {
-    const channel = supabase
-      .channel('menu-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'menu',
-        },
-        () => {
-          fetchMenuItems();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
   const addToCart = async (menuItem: MenuItem) => {
     if (!user) return;
     try {
       const { error } = await supabase.rpc('add_to_cart', {
-        customer_id: user.id,
-        menu_item_id: menuItem.id,
-        quantity: 1
+        p_customer_id: user.id,
+        p_menu_item_id: menuItem.id,
+        p_quantity: 1
       });
       
       if (error) throw error;
