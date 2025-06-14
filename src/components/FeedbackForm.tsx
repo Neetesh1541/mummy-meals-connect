@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,17 +62,16 @@ export function FeedbackForm() {
       });
       return;
     }
+    if (!user) return;
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('feedback')
-        .insert({
-          order_id: selectedOrder,
-          customer_id: user?.id,
-          rating: rating,
-          comment: comment || null
-        });
+      const { error } = await supabase.rpc('submit_feedback', {
+        order_id: selectedOrder,
+        customer_id: user.id,
+        rating_value: rating,
+        comment_text: comment || null
+      });
       
       if (error) throw error;
       

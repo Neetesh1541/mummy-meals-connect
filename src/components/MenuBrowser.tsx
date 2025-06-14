@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,11 +66,11 @@ export function MenuBrowser() {
   };
 
   const fetchCartItems = async () => {
+    if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('cart')
-        .select('id, menu_id, quantity')
-        .eq('customer_id', user?.id);
+      const { data, error } = await supabase.rpc('get_user_cart', {
+        user_id: user.id
+      });
       
       if (error) {
         console.error('Error fetching cart items:', error);
@@ -106,14 +105,13 @@ export function MenuBrowser() {
   };
 
   const addToCart = async (menuItem: MenuItem) => {
+    if (!user) return;
     try {
-      const { error } = await supabase
-        .from('cart')
-        .insert({
-          customer_id: user?.id,
-          menu_id: menuItem.id,
-          quantity: 1
-        });
+      const { error } = await supabase.rpc('add_to_cart', {
+        customer_id: user.id,
+        menu_item_id: menuItem.id,
+        quantity: 1
+      });
       
       if (error) throw error;
       
@@ -135,17 +133,16 @@ export function MenuBrowser() {
   const updateCartQuantity = async (cartItemId: string, newQuantity: number) => {
     try {
       if (newQuantity <= 0) {
-        const { error } = await supabase
-          .from('cart')
-          .delete()
-          .eq('id', cartItemId);
+        const { error } = await supabase.rpc('remove_from_cart', {
+          cart_item_id: cartItemId
+        });
         
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('cart')
-          .update({ quantity: newQuantity })
-          .eq('id', cartItemId);
+        const { error } = await supabase.rpc('update_cart_quantity', {
+          cart_item_id: cartItemId,
+          new_quantity: newQuantity
+        });
         
         if (error) throw error;
       }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,24 +34,12 @@ export function CartSidebar() {
   }, [user]);
 
   const fetchCartItems = async () => {
+    if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('cart')
-        .select(`
-          id,
-          quantity,
-          menu_id,
-          menu:menu_id (
-            title,
-            price,
-            mom_id,
-            users:mom_id (
-              full_name
-            )
-          )
-        `)
-        .eq('customer_id', user?.id);
-      
+      const { data, error } = await supabase.rpc('get_cart_items', {
+        user_id: user.id,
+      });
+
       if (error) {
         console.error('Error fetching cart:', error);
         return;
@@ -67,18 +54,15 @@ export function CartSidebar() {
   const updateQuantity = async (cartItemId: string, newQuantity: number) => {
     try {
       if (newQuantity <= 0) {
-        const { error } = await supabase
-          .from('cart')
-          .delete()
-          .eq('id', cartItemId);
-        
+        const { error } = await supabase.rpc('remove_from_cart', {
+          cart_item_id: cartItemId,
+        });
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('cart')
-          .update({ quantity: newQuantity })
-          .eq('id', cartItemId);
-        
+        const { error } = await supabase.rpc('update_cart_quantity', {
+          cart_item_id: cartItemId,
+          new_quantity: newQuantity,
+        });
         if (error) throw error;
       }
       
@@ -94,11 +78,11 @@ export function CartSidebar() {
   };
 
   const clearCart = async () => {
+    if (!user) return;
     try {
-      const { error } = await supabase
-        .from('cart')
-        .delete()
-        .eq('customer_id', user?.id);
+      const { error } = await supabase.rpc('clear_cart', {
+        user_id: user.id,
+      });
       
       if (error) throw error;
       
@@ -118,25 +102,17 @@ export function CartSidebar() {
   };
 
   const checkout = async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      // Create orders from cart items
-      for (const item of cartItems) {
-        const { error } = await supabase
-          .from('orders')
-          .insert({
-            customer_id: user?.id,
-            mom_id: item.menu.mom_id,
-            menu_id: item.menu_id,
-            quantity: item.quantity,
-            total_amount: item.menu.price * item.quantity,
-            status: 'placed'
-          });
-        
-        if (error) throw error;
-      }
+      const { error } = await supabase.rpc('create_orders_from_cart', {
+        customer_id: user.id,
+      });
       
-      await clearCart();
+      if (error) throw error;
+
+      // RPC call also clears cart, just need to update UI
+      setCartItems([]);
       
       toast({
         title: "Order placed successfully!",
