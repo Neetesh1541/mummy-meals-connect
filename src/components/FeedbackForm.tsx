@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,10 +68,10 @@ export function FeedbackForm() {
     setSubmitting(true);
     try {
       const { error } = await supabase.rpc('submit_feedback', {
-        order_id: selectedOrder,
-        customer_id: user.id,
-        rating_value: rating,
-        comment_text: comment || null
+        p_order_id: selectedOrder,
+        p_customer_id: user.id,
+        p_rating_value: rating,
+        p_comment_text: comment || null
       });
       
       if (error) throw error;
