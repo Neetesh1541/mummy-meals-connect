@@ -45,7 +45,7 @@ export function CartSidebar() {
         return;
       }
       
-      setCartItems(data || []);
+      setCartItems((data as any) || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
     }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,11 +36,16 @@ export function OrderTracking() {
   }, [user]);
 
   const fetchOrders = async () => {
+    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          *,
+          id,
+          status,
+          total_amount,
+          quantity,
+          created_at,
           menu!orders_menu_id_fkey(title, price),
           mom:users!orders_mom_id_fkey(full_name),
           delivery_partner:users!orders_delivery_partner_id_fkey(full_name)

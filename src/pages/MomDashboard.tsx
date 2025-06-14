@@ -1,4 +1,3 @@
-
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { WavyBackground } from "@/components/WavyBackground";
@@ -42,11 +41,15 @@ export default function MomDashboard() {
   }, [user]);
 
   const fetchOrders = async () => {
+    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          *,
+          id,
+          status,
+          total_amount,
+          created_at,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name)
         `)
@@ -61,20 +64,20 @@ export default function MomDashboard() {
   };
 
   const fetchStats = async () => {
+    if (!user) return;
     try {
       const [ordersResponse, menuResponse] = await Promise.all([
-        supabase.from('orders').select('*').eq('mom_id', user?.id),
-        supabase.from('menu').select('*').eq('mom_id', user?.id)
+        supabase.from('orders').select('status, total_amount').eq('mom_id', user.id),
+        supabase.from('menu').select('id', { count: 'exact' }).eq('mom_id', user.id)
       ]);
       
       const orders = ordersResponse.data || [];
-      const menuItems = menuResponse.data || [];
       
       setStats({
         totalOrders: orders.length,
-        activeOrders: orders.filter(order => ['placed', 'preparing', 'ready'].includes(order.status)).length,
+        activeOrders: orders.filter(order => ['placed', 'preparing', 'ready'].includes(order.status ?? '')).length,
         totalRevenue: orders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
-        menuItems: menuItems.length,
+        menuItems: menuResponse.count || 0,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -47,12 +46,16 @@ export default function DeliveryDashboard() {
   }, [user]);
 
   const fetchOrders = async () => {
+    if (!user) return;
     try {
       // Fetch available orders (ready status, no delivery partner assigned)
       const { data: available, error: availableError } = await supabase
         .from('orders')
         .select(`
-          *,
+          id,
+          status,
+          total_amount,
+          created_at,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name),
           mom:users!orders_mom_id_fkey(full_name)
@@ -67,7 +70,10 @@ export default function DeliveryDashboard() {
       const { data: assigned, error: assignedError } = await supabase
         .from('orders')
         .select(`
-          *,
+          id,
+          status,
+          total_amount,
+          created_at,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name),
           mom:users!orders_mom_id_fkey(full_name)
