@@ -24,8 +24,8 @@ export function WavyBackground() {
           <animateTransform
             attributeName="transform"
             type="translate"
-            values="0 0; 20 -10; 0 0"
-            dur="18s"
+            values="0 0; 30 -15; 0 0"
+            dur="20s"
             repeatCount="indefinite"
           />
         </path>
@@ -49,8 +49,8 @@ export function WavyBackground() {
            <animateTransform
             attributeName="transform"
             type="translate"
-            values="0 0; -30 15; 0 0"
-            dur="25s"
+            values="0 0; -40 20; 0 0"
+            dur="28s"
             repeatCount="indefinite"
           />
         </path>
@@ -74,8 +74,32 @@ export function WavyBackground() {
            <animateTransform
             attributeName="transform"
             type="translate"
-            values="-50 0; 50 0; -50 0"
-            dur="30s"
+            values="-60 0; 60 0; -60 0"
+            dur="35s"
+            repeatCount="indefinite"
+          />
+        </path>
+      </svg>
+      <svg
+        className="absolute bottom-0 left-0 w-full h-48 opacity-20"
+        viewBox="0 0 1440 320"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="wave-gradient-4" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#fde047" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#fca5a5" stopOpacity="0.3" />
+          </linearGradient>
+        </defs>
+        <path
+          fill="url(#wave-gradient-4)"
+          d="M0,256L60,234.7C120,213,240,171,360,165.3C480,160,600,192,720,208C840,224,960,224,1080,208C1200,192,1320,160,1380,144L1440,128L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"
+        >
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            values="0 0; 10 20; 0 0"
+            dur="22s"
             repeatCount="indefinite"
           />
         </path>
@@ -83,7 +107,7 @@ export function WavyBackground() {
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(40)].map((_, i) => (
+        {[...Array(60)].map((_, i) => (
           <div
             key={`particle-${i}`}
             className="absolute w-2 h-2 bg-warm-orange-300 rounded-full opacity-30 animate-float"
@@ -95,7 +119,7 @@ export function WavyBackground() {
             }}
           />
         ))}
-        {[...Array(60)].map((_, i) => (
+        {[...Array(80)].map((_, i) => (
           <div
             key={`speck-${i}`}
             className="absolute w-1 h-1 bg-pastel-green-300 rounded-full opacity-40 animate-pulse-slow"
@@ -104,6 +128,18 @@ export function WavyBackground() {
               top: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 12}s`,
               animationDuration: `${5 + Math.random() * 7}s`,
+            }}
+          />
+        ))}
+        {[...Array(30)].map((_, i) => (
+          <div
+            key={`bubble-${i}`}
+            className="absolute w-3 h-3 bg-cream-300 rounded-full opacity-20 animate-float"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 15}s`,
+              animationDuration: `${15 + Math.random() * 15}s`,
             }}
           />
         ))}

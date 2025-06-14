@@ -1,4 +1,3 @@
-
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,7 +23,7 @@ export default function About() {
           {/* Story Section */}
           <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm">
             <CardContent className="p-8">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div className="gap-8 items-center">
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2">
                     <Heart className="h-6 w-6 text-primary" />
@@ -36,11 +35,6 @@ export default function About() {
                     We bridge the gap between homesick hearts and the loving hands of local mothers 
                     who understand the importance of a wholesome, home-style meal.
                   </p>
-                </div>
-                <div className="bg-gradient-to-br from-warm-orange-100 to-pastel-green-100 rounded-lg p-6 text-center">
-                  <div className="text-4xl mb-4">🏆</div>
-                  <p className="font-medium text-lg">5th Position</p>
-                  <p className="text-sm text-muted-foreground">Startup Hackathon Winner</p>
                 </div>
               </div>
             </CardContent>

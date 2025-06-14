@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Heart, Github, User, Mail, Star } from "lucide-react";
 
@@ -73,10 +72,6 @@ export function Footer() {
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>GDG Gurgaon, GDG Noida, MLSA</p>
                 <p>Core Team - Azure Dev Community</p>
-                <div className="flex items-center space-x-1">
-                  <Star className="h-3 w-3 text-yellow-500" />
-                  <span>5th position in Startup Hackathon</span>
-                </div>
               </div>
             </div>
           </div>
