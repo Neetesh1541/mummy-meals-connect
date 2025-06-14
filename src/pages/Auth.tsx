@@ -1,0 +1,163 @@
+
+import { useState } from "react";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { User, Heart, Package } from "lucide-react";
+
+type UserRole = "customer" | "mom" | "delivery";
+type AuthMode = "login" | "signup";
+
+export default function Auth() {
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [selectedRole, setSelectedRole] = useState<UserRole>("customer");
+
+  const roles = [
+    {
+      id: "customer" as UserRole,
+      title: "Customer",
+      description: "Order delicious home-cooked meals",
+      icon: User,
+      color: "bg-warm-orange-500"
+    },
+    {
+      id: "mom" as UserRole,
+      title: "Mummy Partner",
+      description: "Cook and earn from home",
+      icon: Heart,
+      color: "bg-pastel-green-500"
+    },
+    {
+      id: "delivery" as UserRole,
+      title: "Delivery Partner",
+      description: "Deliver meals and earn",
+      icon: Package,
+      color: "bg-cream-500"
+    }
+  ];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle authentication logic here
+    console.log("Auth attempt:", { authMode, selectedRole });
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="container py-20">
+        <div className="max-w-md mx-auto">
+          <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm">
+            <CardHeader className="text-center">
+              <CardTitle className="font-poppins text-2xl">
+                {authMode === "login" ? "Welcome Back!" : "Join Mummy Meals"}
+              </CardTitle>
+              <CardDescription>
+                {authMode === "login" 
+                  ? "Sign in to your account to continue" 
+                  : "Create your account and start your journey"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {authMode === "signup" && (
+                <div className="space-y-4">
+                  <Label className="text-base font-medium">Choose your role:</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    {roles.map((role) => {
+                      const Icon = role.icon;
+                      return (
+                        <button
+                          key={role.id}
+                          onClick={() => setSelectedRole(role.id)}
+                          className={`p-4 rounded-lg border-2 text-left smooth-transition hover:scale-105 ${
+                            selectedRole === role.id
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/50"
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-10 h-10 rounded-full ${role.color} flex items-center justify-center`}>
+                              <Icon className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{role.title}</h3>
+                              <p className="text-sm text-muted-foreground">{role.description}</p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {authMode === "signup" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input id="name" placeholder="Enter your full name" required />
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="Enter your email" required />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" type="password" placeholder="Enter your password" required />
+                </div>
+
+                {authMode === "signup" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input id="phone" type="tel" placeholder="Enter your phone number" required />
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full bg-gradient-to-r from-warm-orange-500 to-warm-orange-600 hover:from-warm-orange-600 hover:to-warm-orange-700">
+                  {authMode === "login" ? "Sign In" : "Create Account"}
+                </Button>
+              </form>
+
+              <div className="relative">
+                <Separator />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-sm text-muted-foreground">
+                  or
+                </span>
+              </div>
+
+              <div className="text-center">
+                <button
+                  onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}
+                  className="text-primary hover:underline smooth-transition"
+                >
+                  {authMode === "login" 
+                    ? "Don't have an account? Sign up" 
+                    : "Already have an account? Sign in"
+                  }
+                </button>
+              </div>
+
+              {authMode === "signup" && selectedRole && (
+                <div className="pt-4 border-t">
+                  <Badge variant="secondary" className="w-full justify-center py-2">
+                    Creating account as: {roles.find(r => r.id === selectedRole)?.title}
+                  </Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
