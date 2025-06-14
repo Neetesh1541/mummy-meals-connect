@@ -84,19 +84,19 @@ export default function About() {
                   <p className="text-muted-foreground mb-4">3rd-year Computer Science Engineering Student, AKTU</p>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div className="bg-white rounded-lg p-3">
+                    <div className="bg-background rounded-lg p-3">
                       <p className="font-medium">GDG Gurgaon</p>
                       <p className="text-muted-foreground">Community Member</p>
                     </div>
-                    <div className="bg-white rounded-lg p-3">
+                    <div className="bg-background rounded-lg p-3">
                       <p className="font-medium">GDG Noida</p>
                       <p className="text-muted-foreground">Active Participant</p>
                     </div>
-                    <div className="bg-white rounded-lg p-3">
+                    <div className="bg-background rounded-lg p-3">
                       <p className="font-medium">MLSA</p>
                       <p className="text-muted-foreground">Microsoft Learn</p>
                     </div>
-                    <div className="bg-white rounded-lg p-3">
+                    <div className="bg-background rounded-lg p-3">
                       <p className="font-medium">Azure Dev</p>
                       <p className="text-muted-foreground">Core Team</p>
                     </div>
