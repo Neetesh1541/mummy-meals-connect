@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -105,24 +106,24 @@ export function CartSidebar() {
     if (!user) return;
     setLoading(true);
     try {
-      const { error } = await supabase.rpc('create_orders_from_cart', {
-        customer_id: user.id,
-      });
+      const { data, error } = await supabase.functions.invoke('create-checkout-session');
       
       if (error) throw error;
 
-      // RPC call also clears cart, just need to update UI
-      setCartItems([]);
-      
-      toast({
-        title: "Order placed successfully!",
-        description: "Your order has been sent to the kitchen",
-      });
-    } catch (error) {
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast({
+          title: "Error",
+          description: "Could not create payment session.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
       console.error('Error placing order:', error);
       toast({
         title: "Error",
-        description: "Failed to place order",
+        description: error.message || "Failed to place order",
         variant: "destructive",
       });
     } finally {
@@ -203,7 +204,7 @@ export function CartSidebar() {
             
             <Button
               onClick={checkout}
-              disabled={loading}
+              disabled={loading || cartItems.length === 0}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
             >
               <CreditCard className="h-4 w-4 mr-2" />

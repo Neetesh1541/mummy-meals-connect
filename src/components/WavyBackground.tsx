@@ -7,42 +7,66 @@ export function WavyBackground() {
       {/* Animated waves */}
       <svg
         className="absolute bottom-0 left-0 w-full h-64 opacity-30"
-        viewBox="0 0 1200 320"
+        viewBox="0 0 1440 320"
         preserveAspectRatio="none"
       >
+        <defs>
+          <linearGradient id="wave-gradient-1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#f97316" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="#84cc16" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.4" />
+          </linearGradient>
+        </defs>
         <path
-          fill="url(#wave-gradient)"
-          d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,133.3C672,139,768,181,864,197.3C960,213,1056,203,1152,181.3C1200,160,1248,128,1296,128C1344,128,1392,160,1440,181.3L1488,203L1488,320L1440,320C1392,320,1344,320,1296,320C1248,320,1200,320,1152,320C1104,320,1056,320,1008,320C960,320,912,320,864,320C816,320,768,320,720,320C672,320,624,320,576,320C528,320,480,320,432,320C384,320,336,320,288,320C240,320,192,320,144,320C96,320,48,320,24,320L0,320Z"
-          className="animate-pulse"
+          fill="url(#wave-gradient-1)"
+          d="M0,160L48,181.3C96,203,192,245,288,250.7C384,256,480,224,576,192C672,160,768,128,864,133.3C960,139,1056,181,1152,192C1248,203,1344,181,1392,170.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
         >
           <animateTransform
             attributeName="transform"
             type="translate"
-            values="0 0;50 0;0 0"
-            dur="10s"
+            values="0 0; -50 0; 0 0"
+            dur="12s"
             repeatCount="indefinite"
           />
         </path>
+      </svg>
+      <svg
+        className="absolute bottom-0 left-0 w-full h-80 opacity-20"
+        viewBox="0 0 1440 320"
+        preserveAspectRatio="none"
+      >
         <defs>
-          <linearGradient id="wave-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#f97316" stopOpacity="0.3" />
-            <stop offset="50%" stopColor="#84cc16" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.3" />
+           <linearGradient id="wave-gradient-2" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="#84cc16" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#f97316" stopOpacity="0.4" />
           </linearGradient>
         </defs>
+        <path
+          fill="url(#wave-gradient-2)"
+          d="M0,224L48,208C96,192,192,160,288,170.7C384,181,480,235,576,229.3C672,224,768,160,864,149.3C960,139,1056,181,1152,202.7C1248,224,1344,224,1392,224L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+        >
+           <animateTransform
+            attributeName="transform"
+            type="translate"
+            values="0 0; 50 0; 0 0"
+            dur="15s"
+            repeatCount="indefinite"
+          />
+        </path>
       </svg>
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(30)].map((_, i) => (
           <div
             key={i}
             className="absolute w-2 h-2 bg-warm-orange-400 rounded-full opacity-20 animate-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${3 + Math.random() * 2}s`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${5 + Math.random() * 5}s`,
             }}
           />
         ))}

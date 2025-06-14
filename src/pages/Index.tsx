@@ -5,7 +5,6 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { WavyBackground } from "@/components/WavyBackground";
 import { HeroSection } from "@/components/HeroSection";
-import { FeaturesSection } from "@/components/FeaturesSection";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
@@ -38,7 +37,6 @@ const Index = () => {
       <Header />
       <main className="relative z-10">
         <HeroSection />
-        <FeaturesSection />
       </main>
       <Footer />
     </div>
