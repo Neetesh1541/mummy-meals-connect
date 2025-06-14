@@ -16,7 +16,7 @@ interface MenuItem {
   mom_id: string;
   users: {
     full_name: string;
-  };
+  } | null;
 }
 
 interface CartItem {
@@ -46,7 +46,7 @@ export function MenuBrowser() {
         .from('menu')
         .select(`
           *,
-          users!menu_mom_id_fkey(full_name)
+          users (full_name)
         `)
         .eq('available', true)
         .order('created_at', { ascending: false });
