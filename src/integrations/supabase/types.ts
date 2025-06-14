@@ -55,7 +55,9 @@ export type Database = {
           id: string
           menu_id: string | null
           mom_id: string | null
+          quantity: number | null
           status: string | null
+          total_amount: number | null
         }
         Insert: {
           created_at?: string | null
@@ -64,7 +66,9 @@ export type Database = {
           id?: string
           menu_id?: string | null
           mom_id?: string | null
+          quantity?: number | null
           status?: string | null
+          total_amount?: number | null
         }
         Update: {
           created_at?: string | null
@@ -73,7 +77,9 @@ export type Database = {
           id?: string
           menu_id?: string | null
           mom_id?: string | null
+          quantity?: number | null
           status?: string | null
+          total_amount?: number | null
         }
         Relationships: [
           {
