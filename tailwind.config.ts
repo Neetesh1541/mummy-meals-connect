@@ -136,7 +136,11 @@ export default {
 				'pulse-slow': {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.5' }
-				}
+				},
+        'twinkle': {
+          '0%, 100%': { opacity: '0.3' },
+          '50%': { opacity: '1' },
+        },
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -144,7 +148,8 @@ export default {
 				'wave': 'wave 2s ease-in-out infinite',
 				'float': 'float 3s ease-in-out infinite',
 				'fade-in-up': 'fade-in-up 0.5s ease-out',
-				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'twinkle': 'twinkle 3s ease-in-out infinite',
 			},
 			fontFamily: {
 				'poppins': ['Poppins', 'sans-serif'],

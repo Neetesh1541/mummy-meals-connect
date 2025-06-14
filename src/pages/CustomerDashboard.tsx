@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -6,13 +7,15 @@ import { CartSidebar } from "@/components/CartSidebar";
 import { OrderTracking } from "@/components/OrderTracking";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Clock, MessageSquare, Home } from "lucide-react";
+import { Clock, MessageSquare, Home } from "lucide-react";
+import { WavyBackground } from "@/components/WavyBackground";
 
 export default function CustomerDashboard() {
   const [showCart, setShowCart] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background relative animated-soft-gradient">
+    <div className="min-h-screen bg-background relative">
+      <WavyBackground />
       <Header />
       <main className="container py-8 relative z-10">
         <div className="max-w-7xl mx-auto">

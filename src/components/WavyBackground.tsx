@@ -24,8 +24,8 @@ export function WavyBackground() {
           <animateTransform
             attributeName="transform"
             type="translate"
-            values="0 0; 30 -15; 0 0"
-            dur="20s"
+            values="0 0; 35 -20; 0 0"
+            dur="22s"
             repeatCount="indefinite"
           />
         </path>
@@ -49,8 +49,8 @@ export function WavyBackground() {
            <animateTransform
             attributeName="transform"
             type="translate"
-            values="0 0; -40 20; 0 0"
-            dur="28s"
+            values="0 0; -50 25; 0 0"
+            dur="30s"
             repeatCount="indefinite"
           />
         </path>
@@ -74,8 +74,8 @@ export function WavyBackground() {
            <animateTransform
             attributeName="transform"
             type="translate"
-            values="-60 0; 60 0; -60 0"
-            dur="35s"
+            values="-70 0; 70 0; -70 0"
+            dur="40s"
             repeatCount="indefinite"
           />
         </path>
@@ -98,8 +98,8 @@ export function WavyBackground() {
           <animateTransform
             attributeName="transform"
             type="translate"
-            values="0 0; 10 20; 0 0"
-            dur="22s"
+            values="0 0; 15 25; 0 0"
+            dur="25s"
             repeatCount="indefinite"
           />
         </path>
@@ -107,7 +107,7 @@ export function WavyBackground() {
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(60)].map((_, i) => (
+        {[...Array(80)].map((_, i) => (
           <div
             key={`particle-${i}`}
             className="absolute w-2 h-2 bg-warm-orange-300 rounded-full opacity-30 animate-float"
@@ -119,7 +119,7 @@ export function WavyBackground() {
             }}
           />
         ))}
-        {[...Array(80)].map((_, i) => (
+        {[...Array(100)].map((_, i) => (
           <div
             key={`speck-${i}`}
             className="absolute w-1 h-1 bg-pastel-green-300 rounded-full opacity-40 animate-pulse-slow"
@@ -131,7 +131,7 @@ export function WavyBackground() {
             }}
           />
         ))}
-        {[...Array(30)].map((_, i) => (
+        {[...Array(50)].map((_, i) => (
           <div
             key={`bubble-${i}`}
             className="absolute w-3 h-3 bg-cream-300 rounded-full opacity-20 animate-float"
@@ -140,6 +140,17 @@ export function WavyBackground() {
               top: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 15}s`,
               animationDuration: `${15 + Math.random() * 15}s`,
+            }}
+          />
+        ))}
+        {[...Array(40)].map((_, i) => (
+          <div
+            key={`twinkle-${i}`}
+            className="absolute w-1 h-1 bg-white rounded-full animate-twinkle"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
             }}
           />
         ))}
