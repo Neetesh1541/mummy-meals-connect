@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ export function MenuBrowser() {
       fetchCartItems();
 
       const channel = supabase
-        .channel('menu-realtime')
+        .channel(`customer-dashboard-browser-${user.id}`)
         .on(
           'postgres_changes',
           {
@@ -48,6 +49,18 @@ export function MenuBrowser() {
           },
           () => {
             fetchMenuItems();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'cart',
+            filter: `customer_id=eq.${user.id}`,
+          },
+          () => {
+            fetchCartItems();
           }
         )
         .subscribe();

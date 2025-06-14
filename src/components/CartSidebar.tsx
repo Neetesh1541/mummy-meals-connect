@@ -31,6 +31,28 @@ export function CartSidebar() {
   useEffect(() => {
     if (user) {
       fetchCartItems();
+
+      const channel = supabase
+        .channel(`cart-sidebar-realtime-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'cart',
+            filter: `customer_id=eq.${user.id}`,
+          },
+          () => {
+            fetchCartItems();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else {
+      setCartItems([]);
     }
   }, [user]);
 
