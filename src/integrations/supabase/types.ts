@@ -242,13 +242,59 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_to_cart: {
+        Args: { customer_id: string; menu_item_id: string; quantity: number }
+        Returns: undefined
+      }
+      clear_cart: {
+        Args: { user_id: string }
+        Returns: undefined
+      }
+      create_orders_from_cart: {
+        Args: { customer_id: string }
+        Returns: undefined
+      }
       custom_access_token_hook: {
         Args: { event: Json }
         Returns: Json
       }
+      get_cart_items: {
+        Args: { user_id: string }
+        Returns: {
+          id: string
+          quantity: number
+          menu_id: string
+          menu: Json
+        }[]
+      }
+      get_user_cart: {
+        Args: { user_id: string }
+        Returns: {
+          id: string
+          menu_id: string
+          quantity: number
+        }[]
+      }
       has_role: {
         Args: { _user_id: string; _role: string }
         Returns: boolean
+      }
+      remove_from_cart: {
+        Args: { cart_item_id: string }
+        Returns: undefined
+      }
+      submit_feedback: {
+        Args: {
+          order_id: string
+          customer_id: string
+          rating_value: number
+          comment_text?: string
+        }
+        Returns: undefined
+      }
+      update_cart_quantity: {
+        Args: { cart_item_id: string; new_quantity: number }
+        Returns: undefined
       }
     }
     Enums: {

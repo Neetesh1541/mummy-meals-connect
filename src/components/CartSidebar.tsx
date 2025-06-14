@@ -37,7 +37,21 @@ export function CartSidebar() {
   const fetchCartItems = async () => {
     try {
       const { data, error } = await supabase
-        .rpc('get_cart_items', { user_id: user?.id });
+        .from('cart')
+        .select(`
+          id,
+          quantity,
+          menu_id,
+          menu:menu_id (
+            title,
+            price,
+            mom_id,
+            users:mom_id (
+              full_name
+            )
+          )
+        `)
+        .eq('customer_id', user?.id);
       
       if (error) {
         console.error('Error fetching cart:', error);
@@ -54,15 +68,16 @@ export function CartSidebar() {
     try {
       if (newQuantity <= 0) {
         const { error } = await supabase
-          .rpc('remove_from_cart', { cart_item_id: cartItemId });
+          .from('cart')
+          .delete()
+          .eq('id', cartItemId);
         
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .rpc('update_cart_quantity', { 
-            cart_item_id: cartItemId, 
-            new_quantity: newQuantity 
-          });
+          .from('cart')
+          .update({ quantity: newQuantity })
+          .eq('id', cartItemId);
         
         if (error) throw error;
       }
@@ -81,7 +96,9 @@ export function CartSidebar() {
   const clearCart = async () => {
     try {
       const { error } = await supabase
-        .rpc('clear_cart', { user_id: user?.id });
+        .from('cart')
+        .delete()
+        .eq('customer_id', user?.id);
       
       if (error) throw error;
       
@@ -103,10 +120,21 @@ export function CartSidebar() {
   const checkout = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .rpc('create_orders_from_cart', { customer_id: user?.id });
-      
-      if (error) throw error;
+      // Create orders from cart items
+      for (const item of cartItems) {
+        const { error } = await supabase
+          .from('orders')
+          .insert({
+            customer_id: user?.id,
+            mom_id: item.menu.mom_id,
+            menu_id: item.menu_id,
+            quantity: item.quantity,
+            total_amount: item.menu.price * item.quantity,
+            status: 'placed'
+          });
+        
+        if (error) throw error;
+      }
       
       await clearCart();
       

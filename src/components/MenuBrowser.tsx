@@ -69,7 +69,9 @@ export function MenuBrowser() {
   const fetchCartItems = async () => {
     try {
       const { data, error } = await supabase
-        .rpc('get_user_cart', { user_id: user?.id });
+        .from('cart')
+        .select('id, menu_id, quantity')
+        .eq('customer_id', user?.id);
       
       if (error) {
         console.error('Error fetching cart items:', error);
@@ -106,9 +108,10 @@ export function MenuBrowser() {
   const addToCart = async (menuItem: MenuItem) => {
     try {
       const { error } = await supabase
-        .rpc('add_to_cart', {
+        .from('cart')
+        .insert({
           customer_id: user?.id,
-          menu_item_id: menuItem.id,
+          menu_id: menuItem.id,
           quantity: 1
         });
       
@@ -133,15 +136,16 @@ export function MenuBrowser() {
     try {
       if (newQuantity <= 0) {
         const { error } = await supabase
-          .rpc('remove_from_cart', { cart_item_id: cartItemId });
+          .from('cart')
+          .delete()
+          .eq('id', cartItemId);
         
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .rpc('update_cart_quantity', {
-            cart_item_id: cartItemId,
-            new_quantity: newQuantity
-          });
+          .from('cart')
+          .update({ quantity: newQuantity })
+          .eq('id', cartItemId);
         
         if (error) throw error;
       }
