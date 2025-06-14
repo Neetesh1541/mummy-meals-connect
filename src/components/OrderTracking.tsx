@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -202,10 +203,13 @@ export function OrderTracking() {
                     <User className="h-4 w-4 text-gray-500" />
                     <span>Chef: {order.mom.full_name}</span>
                     {order.mom.phone && (
-                      <a href={`tel:${order.mom.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
-                        <Phone className="h-3 w-3" />
-                        <span>Contact</span>
-                      </a>
+                      <div className="ml-auto flex items-center gap-2">
+                        <span className="text-muted-foreground">{order.mom.phone}</span>
+                        <a href={`tel:${order.mom.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                          <Phone className="h-3 w-3" />
+                          <span>Call</span>
+                        </a>
+                      </div>
                     )}
                   </div>
 
@@ -214,10 +218,13 @@ export function OrderTracking() {
                       <Truck className="h-4 w-4 text-gray-500" />
                       <span>Delivery: {order.delivery_partner.full_name}</span>
                       {order.delivery_partner.phone && (
-                        <a href={`tel:${order.delivery_partner.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
-                          <Phone className="h-3 w-3" />
-                          <span>Contact</span>
-                        </a>
+                        <div className="ml-auto flex items-center gap-2">
+                          <span className="text-muted-foreground">{order.delivery_partner.phone}</span>
+                          <a href={`tel:${order.delivery_partner.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                            <Phone className="h-3 w-3" />
+                            <span>Call</span>
+                          </a>
+                        </div>
                       )}
                     </div>
                   )}
