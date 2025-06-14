@@ -1,3 +1,4 @@
+
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MenuManagement } from "@/components/MenuManagement";
@@ -48,7 +49,13 @@ export default function MomDashboard() {
     if (user) {
       fetchOrders();
       fetchStats();
-      subscribeToOrderChanges();
+      const channel = subscribeToOrderChanges();
+
+      return () => {
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
+      };
     }
   }, [user]);
 
@@ -98,6 +105,8 @@ export default function MomDashboard() {
   };
 
   const subscribeToOrderChanges = () => {
+    if (!user) return null;
+    
     const channel = supabase
       .channel('mom-orders')
       .on(
@@ -115,9 +124,7 @@ export default function MomDashboard() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return channel;
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -46,7 +47,9 @@ export default function DeliveryDashboard() {
       fetchOrders();
       const channel = subscribeToOrderChanges();
       return () => {
-        supabase.removeChannel(channel);
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
       }
     }
   }, [user]);
@@ -144,9 +147,7 @@ export default function DeliveryDashboard() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return channel;
   };
 
   const acceptOrder = async (orderId: string) => {
