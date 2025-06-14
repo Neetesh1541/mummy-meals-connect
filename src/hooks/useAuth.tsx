@@ -36,11 +36,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Fetch user role
           setTimeout(async () => {
             try {
-              const { data: roleData } = await supabase
+              const { data: roleData, error } = await supabase
                 .from('user_roles')
                 .select('role')
                 .eq('user_id', session.user.id)
-                .single();
+                .maybeSingle(); // Use maybeSingle() to prevent errors when no role is found
+              
+              if (error) {
+                console.error('Error fetching user role:', error);
+              }
               
               setUserRole(roleData?.role ?? null);
             } catch (error) {
