@@ -204,30 +204,38 @@ export function OrderTracking() {
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-gray-500" />
                     <span>Chef: {order.mom.full_name}</span>
-                    {order.mom.phone && (
-                      <div className="ml-auto flex items-center gap-2">
-                        <span className="text-muted-foreground">{order.mom.phone}</span>
-                        <a href={`tel:${order.mom.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
-                          <Phone className="h-3 w-3" />
-                          <span>Call</span>
-                        </a>
-                      </div>
-                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                      {order.mom.phone ? (
+                        <>
+                          <span className="text-muted-foreground">{order.mom.phone}</span>
+                          <a href={`tel:${order.mom.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                            <Phone className="h-3 w-3" />
+                            <span>Call</span>
+                          </a>
+                        </>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">Not provided</span>
+                      )}
+                    </div>
                   </div>
 
                   {order.delivery_partner && (
                     <div className="flex items-center gap-2">
                       <Truck className="h-4 w-4 text-gray-500" />
                       <span>Delivery: {order.delivery_partner.full_name}</span>
-                      {order.delivery_partner.phone && (
-                        <div className="ml-auto flex items-center gap-2">
-                          <span className="text-muted-foreground">{order.delivery_partner.phone}</span>
-                          <a href={`tel:${order.delivery_partner.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
-                            <Phone className="h-3 w-3" />
-                            <span>Call</span>
-                          </a>
-                        </div>
-                      )}
+                      <div className="ml-auto flex items-center gap-2">
+                        {order.delivery_partner.phone ? (
+                          <>
+                            <span className="text-muted-foreground">{order.delivery_partner.phone}</span>
+                            <a href={`tel:${order.delivery_partner.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                              <Phone className="h-3 w-3" />
+                              <span>Call</span>
+                            </a>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Not provided</span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
