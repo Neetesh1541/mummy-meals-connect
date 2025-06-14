@@ -67,13 +67,12 @@ export function FeedbackForm() {
     setSubmitting(true);
     try {
       const { error } = await supabase
-        .from('feedback')
-        .insert([{
+        .rpc('submit_feedback', {
           order_id: selectedOrder,
           customer_id: user?.id,
-          rating,
-          comment,
-        }]);
+          rating_value: rating,
+          comment_text: comment
+        });
       
       if (error) throw error;
       

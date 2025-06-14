@@ -37,19 +37,13 @@ export function CartSidebar() {
   const fetchCartItems = async () => {
     try {
       const { data, error } = await supabase
-        .from('cart')
-        .select(`
-          *,
-          menu!cart_menu_id_fkey(
-            title,
-            price,
-            mom_id,
-            users!menu_mom_id_fkey(full_name)
-          )
-        `)
-        .eq('customer_id', user?.id);
+        .rpc('get_cart_items', { user_id: user?.id });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching cart:', error);
+        return;
+      }
+      
       setCartItems(data || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -60,16 +54,15 @@ export function CartSidebar() {
     try {
       if (newQuantity <= 0) {
         const { error } = await supabase
-          .from('cart')
-          .delete()
-          .eq('id', cartItemId);
+          .rpc('remove_from_cart', { cart_item_id: cartItemId });
         
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from('cart')
-          .update({ quantity: newQuantity })
-          .eq('id', cartItemId);
+          .rpc('update_cart_quantity', { 
+            cart_item_id: cartItemId, 
+            new_quantity: newQuantity 
+          });
         
         if (error) throw error;
       }
@@ -88,9 +81,7 @@ export function CartSidebar() {
   const clearCart = async () => {
     try {
       const { error } = await supabase
-        .from('cart')
-        .delete()
-        .eq('customer_id', user?.id);
+        .rpc('clear_cart', { user_id: user?.id });
       
       if (error) throw error;
       
@@ -112,20 +103,10 @@ export function CartSidebar() {
   const checkout = async () => {
     setLoading(true);
     try {
-      for (const item of cartItems) {
-        const { error } = await supabase
-          .from('orders')
-          .insert([{
-            customer_id: user?.id,
-            mom_id: item.menu.mom_id,
-            menu_id: item.menu_id,
-            quantity: item.quantity,
-            total_amount: item.menu.price * item.quantity,
-            status: 'placed',
-          }]);
-        
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .rpc('create_orders_from_cart', { customer_id: user?.id });
+      
+      if (error) throw error;
       
       await clearCart();
       

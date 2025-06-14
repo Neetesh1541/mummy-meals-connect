@@ -69,11 +69,13 @@ export function MenuBrowser() {
   const fetchCartItems = async () => {
     try {
       const { data, error } = await supabase
-        .from('cart')
-        .select('*')
-        .eq('customer_id', user?.id);
+        .rpc('get_user_cart', { user_id: user?.id });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching cart items:', error);
+        return;
+      }
+      
       setCartItems(data || []);
     } catch (error) {
       console.error('Error fetching cart items:', error);
@@ -103,26 +105,14 @@ export function MenuBrowser() {
 
   const addToCart = async (menuItem: MenuItem) => {
     try {
-      const existingItem = cartItems.find(item => item.menu_id === menuItem.id);
+      const { error } = await supabase
+        .rpc('add_to_cart', {
+          customer_id: user?.id,
+          menu_item_id: menuItem.id,
+          quantity: 1
+        });
       
-      if (existingItem) {
-        const { error } = await supabase
-          .from('cart')
-          .update({ quantity: existingItem.quantity + 1 })
-          .eq('id', existingItem.id);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('cart')
-          .insert([{
-            customer_id: user?.id,
-            menu_id: menuItem.id,
-            quantity: 1,
-          }]);
-        
-        if (error) throw error;
-      }
+      if (error) throw error;
       
       fetchCartItems();
       toast({
@@ -143,16 +133,15 @@ export function MenuBrowser() {
     try {
       if (newQuantity <= 0) {
         const { error } = await supabase
-          .from('cart')
-          .delete()
-          .eq('id', cartItemId);
+          .rpc('remove_from_cart', { cart_item_id: cartItemId });
         
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from('cart')
-          .update({ quantity: newQuantity })
-          .eq('id', cartItemId);
+          .rpc('update_cart_quantity', {
+            cart_item_id: cartItemId,
+            new_quantity: newQuantity
+          });
         
         if (error) throw error;
       }
