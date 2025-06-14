@@ -125,7 +125,7 @@ export function CartSidebar() {
     }
   };
 
-  const checkout = async (address: any) => {
+  const checkout = async (address: any, paymentMethod: 'stripe' | 'cod') => {
     if (!user) return;
     setLoading(true);
     try {
@@ -141,31 +141,48 @@ export function CartSidebar() {
         },
       };
 
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: { shipping_details }
-      });
-      
-      if (error) throw error;
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast({
-          title: "Error",
-          description: "Could not create payment session.",
-          variant: "destructive",
+      if (paymentMethod === 'stripe') {
+        const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+          body: { shipping_details }
         });
+        
+        if (error) throw error;
+
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          toast({
+            title: "Error",
+            description: "Could not create payment session.",
+            variant: "destructive",
+          });
+        }
+      } else { // Cash on Delivery
+        const { error } = await supabase.rpc('create_orders_from_cart', {
+            p_customer_id: user.id,
+            p_shipping_details: shipping_details,
+            p_customer_phone: address.phone
+        });
+
+        if (error) {
+          throw new Error(`Failed to create order: ${error.message}`);
+        }
+        
+        toast({
+          title: "Order Placed!",
+          description: "Your order has been placed successfully. You can track it in your dashboard.",
+        });
+        setIsCheckoutOpen(false);
       }
     } catch (error: any) {
-      console.error('Error placing order:', error);
+      console.error('Error during checkout:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to place order",
+        description: error.message || "Failed to process order",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
-      setIsCheckoutOpen(false);
     }
   };
 

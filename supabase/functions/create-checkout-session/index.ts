@@ -49,13 +49,15 @@ serve(async (req) => {
         },
         quantity: item.quantity,
     }));
+    
+    const origin = req.headers.get("origin");
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
-      success_url: `${Deno.env.get("SUPABASE_URL")!.replace('.co', '.app')}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${Deno.env.get("SUPABASE_URL")!.replace('.co', '.app')}/payment-cancel`,
+      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/payment-cancel`,
       metadata: {
         user_id: user.id,
         shipping_details: JSON.stringify(shipping_details),
@@ -67,9 +69,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.error("Error creating checkout session:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });
   }
 });
+

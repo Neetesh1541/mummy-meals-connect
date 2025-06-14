@@ -5,11 +5,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
 
 interface CheckoutDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCheckout: (address: any) => Promise<void>;
+  onCheckout: (address: any, paymentMethod: 'stripe' | 'cod') => Promise<void>;
   loading: boolean;
 }
 
@@ -28,7 +29,7 @@ export function CheckoutDialog({ isOpen, onClose, onCheckout, loading }: Checkou
     setAddress({ ...address, [e.target.id]: e.target.value });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (paymentMethod: 'stripe' | 'cod') => {
     for (const key in address) {
       if (!address[key as keyof typeof address]) {
         toast({
@@ -39,7 +40,7 @@ export function CheckoutDialog({ isOpen, onClose, onCheckout, loading }: Checkou
         return;
       }
     }
-    onCheckout(address);
+    onCheckout(address, paymentMethod);
   };
 
   return (
@@ -77,12 +78,26 @@ export function CheckoutDialog({ isOpen, onClose, onCheckout, loading }: Checkou
             <Input id="zip" type="text" value={address.zip} onChange={handleChange} className="col-span-3" />
           </div>
         </div>
-        <DialogFooter>
-          <Button onClick={handleSubmit} disabled={loading} className="w-full">
-            {loading ? "Processing..." : "Proceed to Payment"}
-          </Button>
+        <DialogFooter className="flex-col space-y-2 sm:flex-col sm:space-x-0 sm:justify-center">
+            <Button onClick={() => handleSubmit('stripe')} disabled={loading} className="w-full">
+                {loading ? "Processing..." : "Proceed to Payment (Card)"}
+            </Button>
+            <div className="relative my-2">
+                <div className="absolute inset-0 flex items-center">
+                    <Separator />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                    OR
+                    </span>
+                </div>
+            </div>
+            <Button variant="secondary" onClick={() => handleSubmit('cod')} disabled={loading} className="w-full">
+                {loading ? "Processing..." : "Place Order (Cash on Delivery)"}
+            </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
