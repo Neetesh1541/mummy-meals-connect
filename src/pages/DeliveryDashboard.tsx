@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { WavyBackground } from "@/components/WavyBackground";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -166,13 +165,12 @@ export default function DeliveryDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <WavyBackground />
+    <div className="min-h-screen bg-background relative animated-soft-gradient">
       <Header />
       <main className="container py-8 relative z-10">
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="text-center animate-fade-in">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-warm-orange-500 to-pastel-green-500 bg-clip-text text-transparent">
               Delivery Partner Dashboard
             </h1>
             <p className="text-muted-foreground mt-2">
@@ -181,40 +179,48 @@ export default function DeliveryDashboard() {
           </div>
 
           <div className="grid md:grid-cols-4 gap-6 animate-fade-in">
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-blue-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Deliveries</CardTitle>
-                <Truck className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <Truck className="h-4 w-4 text-blue-500" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalDeliveries}</div>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-orange-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Deliveries</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                 <div className="p-2 bg-orange-100 rounded-full">
+                  <Clock className="h-4 w-4 text-orange-500" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.activeDeliveries}</div>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-green-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Today's Earnings</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 bg-green-100 rounded-full">
+                  <DollarSign className="h-4 w-4 text-green-500" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">₹{stats.todayEarnings}</div>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-purple-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Rating</CardTitle>
-                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 bg-purple-100 rounded-full">
+                  <MapPin className="h-4 w-4 text-purple-500" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.rating}</div>
@@ -223,7 +229,7 @@ export default function DeliveryDashboard() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <Card className="animate-fade-in">
+            <Card className="animate-fade-in hover:shadow-xl transition-shadow">
               <CardHeader>
                 <CardTitle>Available Deliveries</CardTitle>
                 <CardDescription>Orders ready for pickup</CardDescription>
@@ -263,7 +269,7 @@ export default function DeliveryDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="animate-fade-in">
+            <Card className="animate-fade-in hover:shadow-xl transition-shadow">
               <CardHeader>
                 <CardTitle>My Deliveries</CardTitle>
                 <CardDescription>Your assigned deliveries</CardDescription>

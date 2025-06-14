@@ -1,8 +1,6 @@
-
 import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { WavyBackground } from "@/components/WavyBackground";
 import { MenuBrowser } from "@/components/MenuBrowser";
 import { CartSidebar } from "@/components/CartSidebar";
 import { OrderTracking } from "@/components/OrderTracking";
@@ -14,8 +12,7 @@ export default function CustomerDashboard() {
   const [showCart, setShowCart] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <WavyBackground />
+    <div className="min-h-screen bg-background relative animated-soft-gradient">
       <Header />
       <main className="container py-8 relative z-10">
         <div className="max-w-7xl mx-auto">

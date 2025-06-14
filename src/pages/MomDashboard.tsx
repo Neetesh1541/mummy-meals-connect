@@ -1,6 +1,5 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { WavyBackground } from "@/components/WavyBackground";
 import { MenuManagement } from "@/components/MenuManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +20,17 @@ interface Order {
     full_name: string;
   };
 }
+
+const getStatusColorForMom = (status: string) => {
+  switch (status) {
+    case 'placed': return 'bg-yellow-400';
+    case 'preparing': return 'bg-orange-400';
+    case 'ready': return 'bg-blue-400';
+    case 'picked_up': return 'bg-indigo-400';
+    case 'delivered': return 'bg-green-500';
+    default: return 'bg-gray-300';
+  }
+};
 
 export default function MomDashboard() {
   const { user } = useAuth();
@@ -121,8 +131,7 @@ export default function MomDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <WavyBackground />
+    <div className="min-h-screen bg-background relative animated-soft-gradient">
       <Header />
       <main className="container py-8 relative z-10">
         <div className="max-w-7xl mx-auto space-y-8">
@@ -136,40 +145,48 @@ export default function MomDashboard() {
           </div>
 
           <div className="grid md:grid-cols-4 gap-6 animate-fade-in">
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-warm-orange-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 bg-warm-orange-100 rounded-full">
+                  <Users className="h-4 w-4 text-warm-orange-500" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalOrders}</div>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-pastel-green-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Menu Items</CardTitle>
-                <ChefHat className="h-4 w-4 text-muted-foreground" />
+                 <div className="p-2 bg-pastel-green-100 rounded-full">
+                  <ChefHat className="h-4 w-4 text-pastel-green-500" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.menuItems}</div>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-cream-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 bg-cream-100 rounded-full">
+                  <Clock className="h-4 w-4 text-cream-500" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.activeOrders}</div>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-green-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <div className="p-2 bg-green-100 rounded-full">
+                  <DollarSign className="h-4 w-4 text-green-500" />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">₹{stats.totalRevenue.toFixed(2)}</div>
@@ -206,16 +223,16 @@ export default function MomDashboard() {
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid gap-4">
+                  <div className="grid md:grid-cols-2 gap-4">
                     {orders.map((order) => (
-                      <Card key={order.id} className="hover:shadow-lg transition-shadow">
+                      <Card key={order.id} className="hover:shadow-lg transition-shadow overflow-hidden">
                         <CardContent className="p-6">
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h3 className="text-lg font-semibold">{order.menu.title}</h3>
                               <p className="text-gray-600">Customer: {order.customer.full_name}</p>
                               <p className="text-sm text-gray-500">
-                                {new Date(order.created_at).toLocaleDateString()}
+                                {new Date(order.created_at).toLocaleString()}
                               </p>
                             </div>
                             <div className="text-right">
@@ -223,7 +240,7 @@ export default function MomDashboard() {
                               <select
                                 value={order.status}
                                 onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                                className="mt-2 p-2 border rounded-md"
+                                className="mt-2 p-2 border rounded-md bg-background focus:ring-2 focus:ring-ring"
                               >
                                 <option value="placed">Placed</option>
                                 <option value="preparing">Preparing</option>
@@ -234,6 +251,7 @@ export default function MomDashboard() {
                             </div>
                           </div>
                         </CardContent>
+                        <div className={`h-1 w-full ${getStatusColorForMom(order.status)}`}></div>
                       </Card>
                     ))}
                   </div>
