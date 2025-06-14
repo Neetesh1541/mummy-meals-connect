@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { WavyBackground } from "@/components/WavyBackground";
 import { HeroSection } from "@/components/HeroSection";
 import { FeaturesSection } from "@/components/FeaturesSection";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,9 +33,10 @@ const Index = () => {
   }, [user, userRole, loading, navigate]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <WavyBackground />
       <Header />
-      <main>
+      <main className="relative z-10">
         <HeroSection />
         <FeaturesSection />
       </main>

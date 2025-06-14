@@ -1,0 +1,184 @@
+
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Clock, CheckCircle, Truck, MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
+interface Order {
+  id: string;
+  status: string;
+  total_amount: number;
+  quantity: number;
+  created_at: string;
+  menu: {
+    title: string;
+    price: number;
+  };
+  mom: {
+    full_name: string;
+  };
+  delivery_partner?: {
+    full_name: string;
+  };
+}
+
+export function OrderTracking() {
+  const { user } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      fetchOrders();
+      subscribeToOrderChanges();
+    }
+  }, [user]);
+
+  const fetchOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          menu!orders_menu_id_fkey(title, price),
+          mom:users!orders_mom_id_fkey(full_name),
+          delivery_partner:users!orders_delivery_partner_id_fkey(full_name)
+        `)
+        .eq('customer_id', user?.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
+
+  const subscribeToOrderChanges = () => {
+    const channel = supabase
+      .channel('order-tracking')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `customer_id=eq.${user?.id}`,
+        },
+        () => {
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'placed':
+        return <Clock className="h-4 w-4" />;
+      case 'preparing':
+        return <Clock className="h-4 w-4 text-orange-500" />;
+      case 'ready':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'picked_up':
+        return <Truck className="h-4 w-4 text-blue-500" />;
+      case 'delivered':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'placed':
+        return 'default';
+      case 'preparing':
+        return 'secondary';
+      case 'ready':
+        return 'default';
+      case 'picked_up':
+        return 'secondary';
+      case 'delivered':
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Order Tracking</h2>
+      
+      {orders.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <MapPin className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
+            <p className="text-gray-600">Place your first order to start tracking!</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <Card key={order.id} className="animate-fade-in">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{order.menu.title}</CardTitle>
+                    <CardDescription>
+                      From {order.mom.full_name} • Quantity: {order.quantity}
+                    </CardDescription>
+                  </div>
+                  <Badge variant={getStatusColor(order.status)} className="flex items-center gap-1">
+                    {getStatusIcon(order.status)}
+                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-lg font-semibold text-green-600">
+                    ₹{order.total_amount}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {new Date(order.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                {order.delivery_partner && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Truck className="h-4 w-4" />
+                    Delivery Partner: {order.delivery_partner.full_name}
+                  </div>
+                )}
+                
+                <div className="mt-4 flex space-x-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className={`flex-1 ${['placed', 'preparing', 'ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
+                  <div className={`flex-1 ${['preparing', 'ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
+                  <div className={`flex-1 ${['ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
+                  <div className={`flex-1 ${['picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
+                  <div className={`flex-1 ${order.status === 'delivered' ? 'bg-green-500' : 'bg-gray-200'}`} />
+                </div>
+                
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>Placed</span>
+                  <span>Preparing</span>
+                  <span>Ready</span>
+                  <span>Out for delivery</span>
+                  <span>Delivered</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

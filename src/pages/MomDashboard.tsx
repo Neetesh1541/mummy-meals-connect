@@ -1,166 +1,243 @@
 
-import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { WavyBackground } from "@/components/WavyBackground";
+import { MenuManagement } from "@/components/MenuManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Plus, ChefHat, DollarSign, Users } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChefHat, Users, DollarSign, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
+interface Order {
+  id: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
+  menu: {
+    title: string;
+  };
+  customer: {
+    full_name: string;
+  };
+}
 
 export default function MomDashboard() {
   const { user } = useAuth();
-  const [orders, setOrders] = useState([]);
-  const [menuItems, setMenuItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    activeOrders: 0,
+    totalRevenue: 0,
+    menuItems: 0,
+  });
 
   useEffect(() => {
     if (user) {
-      fetchData();
+      fetchOrders();
+      fetchStats();
+      subscribeToOrderChanges();
     }
   }, [user]);
 
-  const fetchData = async () => {
+  const fetchOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          menu!orders_menu_id_fkey(title),
+          customer:users!orders_customer_id_fkey(full_name)
+        `)
+        .eq('mom_id', user?.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
+
+  const fetchStats = async () => {
     try {
       const [ordersResponse, menuResponse] = await Promise.all([
         supabase.from('orders').select('*').eq('mom_id', user?.id),
         supabase.from('menu').select('*').eq('mom_id', user?.id)
       ]);
       
-      setOrders(ordersResponse.data || []);
-      setMenuItems(menuResponse.data || []);
+      const orders = ordersResponse.data || [];
+      const menuItems = menuResponse.data || [];
+      
+      setStats({
+        totalOrders: orders.length,
+        activeOrders: orders.filter(order => ['placed', 'preparing', 'ready'].includes(order.status)).length,
+        totalRevenue: orders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
+        menuItems: menuItems.length,
+      });
     } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const subscribeToOrderChanges = () => {
+    const channel = supabase
+      .channel('mom-orders')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `mom_id=eq.${user?.id}`,
+        },
+        () => {
+          fetchOrders();
+          fetchStats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating order status:', error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      <WavyBackground />
       <Header />
-      <main className="container py-8">
-        <div className="max-w-6xl mx-auto space-y-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">Mummy Partner Dashboard</h1>
-              <p className="text-muted-foreground">Manage your kitchen and orders</p>
-            </div>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add New Dish
-            </Button>
+      <main className="container py-8 relative z-10">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <div className="text-center animate-fade-in">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-warm-orange-500 to-pastel-green-500 bg-clip-text text-transparent">
+              Your Kitchen Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Manage your menu and orders with love
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-6">
-            <Card>
+          <div className="grid md:grid-cols-4 gap-6 animate-fade-in">
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{orders.length}</div>
+                <div className="text-2xl font-bold">{stats.totalOrders}</div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Menu Items</CardTitle>
                 <ChefHat className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{menuItems.length}</div>
+                <div className="text-2xl font-bold">{stats.menuItems}</div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
-                <ChefHat className="h-4 w-4 text-muted-foreground" />
+                <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {orders.filter(order => ['placed', 'preparing', 'ready'].includes(order.status)).length}
-                </div>
+                <div className="text-2xl font-bold">{stats.activeOrders}</div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Revenue</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹2,350</div>
+                <div className="text-2xl font-bold">₹{stats.totalRevenue.toFixed(2)}</div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
-                <CardDescription>Orders waiting for preparation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="text-center py-4">Loading...</div>
-                ) : orders.length === 0 ? (
-                  <div className="text-center py-8">
-                    <ChefHat className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No orders yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {orders.slice(0, 3).map((order) => (
-                      <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="capitalize">
-                          {order.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <Tabs defaultValue="menu" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="menu" className="gap-2">
+                <ChefHat className="h-4 w-4" />
+                Menu Management
+              </TabsTrigger>
+              <TabsTrigger value="orders" className="gap-2">
+                <Clock className="h-4 w-4" />
+                Order Management
+              </TabsTrigger>
+            </TabsList>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Menu</CardTitle>
-                <CardDescription>Manage your dishes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {menuItems.length === 0 ? (
-                  <div className="text-center py-8">
-                    <ChefHat className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground mb-4">No dishes added yet</p>
-                    <Button variant="outline">Add Your First Dish</Button>
-                  </div>
+            <TabsContent value="menu" className="animate-fade-in">
+              <MenuManagement />
+            </TabsContent>
+
+            <TabsContent value="orders" className="animate-fade-in">
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold">Order Management</h2>
+                
+                {orders.length === 0 ? (
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <Clock className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
+                      <p className="text-gray-600">Orders will appear here when customers place them</p>
+                    </CardContent>
+                  </Card>
                 ) : (
-                  <div className="space-y-4">
-                    {menuItems.slice(0, 3).map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{item.title}</p>
-                          <p className="text-sm text-muted-foreground">₹{item.price}</p>
-                        </div>
-                        <Badge variant={item.available ? "default" : "secondary"}>
-                          {item.available ? "Available" : "Unavailable"}
-                        </Badge>
-                      </div>
+                  <div className="grid gap-4">
+                    {orders.map((order) => (
+                      <Card key={order.id} className="hover:shadow-lg transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h3 className="text-lg font-semibold">{order.menu.title}</h3>
+                              <p className="text-gray-600">Customer: {order.customer.full_name}</p>
+                              <p className="text-sm text-gray-500">
+                                {new Date(order.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold text-green-600">₹{order.total_amount}</p>
+                              <select
+                                value={order.status}
+                                onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                                className="mt-2 p-2 border rounded-md"
+                              >
+                                <option value="placed">Placed</option>
+                                <option value="preparing">Preparing</option>
+                                <option value="ready">Ready</option>
+                                <option value="picked_up">Picked Up</option>
+                                <option value="delivered">Delivered</option>
+                              </select>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       <Footer />
