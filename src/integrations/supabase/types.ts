@@ -92,6 +92,7 @@ export type Database = {
           customer_id: string | null
           customer_phone: string | null
           delivery_partner_id: string | null
+          estimated_delivery_at: string | null
           id: string
           menu_id: string | null
           mom_id: string | null
@@ -105,6 +106,7 @@ export type Database = {
           customer_id?: string | null
           customer_phone?: string | null
           delivery_partner_id?: string | null
+          estimated_delivery_at?: string | null
           id?: string
           menu_id?: string | null
           mom_id?: string | null
@@ -118,6 +120,7 @@ export type Database = {
           customer_id?: string | null
           customer_phone?: string | null
           delivery_partner_id?: string | null
+          estimated_delivery_at?: string | null
           id?: string
           menu_id?: string | null
           mom_id?: string | null

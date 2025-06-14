@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, Truck, MapPin } from "lucide-react";
+import { Clock, CheckCircle, Truck, MapPin, Phone, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { differenceInMinutes } from "date-fns";
 
 interface Order {
   id: string;
@@ -12,26 +13,44 @@ interface Order {
   total_amount: number;
   quantity: number;
   created_at: string;
+  estimated_delivery_at: string | null;
   menu: {
     title: string;
     price: number;
   };
   mom: {
     full_name: string;
+    phone?: string;
   };
   delivery_partner?: {
     full_name: string;
+    phone?: string;
   };
 }
 
 export function OrderTracking() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 60000); // update every minute
+
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (user) {
       fetchOrders();
-      subscribeToOrderChanges();
+      const channel = subscribeToOrderChanges();
+
+      return () => {
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
+      };
     }
   }, [user]);
 
@@ -46,9 +65,10 @@ export function OrderTracking() {
           total_amount,
           quantity,
           created_at,
+          estimated_delivery_at,
           menu!orders_menu_id_fkey(title, price),
-          mom:users!orders_mom_id_fkey(full_name),
-          delivery_partner:users!orders_delivery_partner_id_fkey(full_name)
+          mom:users!orders_mom_id_fkey(full_name, phone),
+          delivery_partner:users!orders_delivery_partner_id_fkey(full_name, phone)
         `)
         .eq('customer_id', user?.id)
         .order('created_at', { ascending: false });
@@ -61,6 +81,7 @@ export function OrderTracking() {
   };
 
   const subscribeToOrderChanges = () => {
+    if (!user) return null;
     const channel = supabase
       .channel('order-tracking')
       .on(
@@ -77,9 +98,7 @@ export function OrderTracking() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return channel;
   };
 
   const getStatusIcon = (status: string) => {
@@ -116,6 +135,25 @@ export function OrderTracking() {
     }
   };
 
+  const renderTimeRemaining = (order: Order) => {
+    if (order.status !== 'picked_up' || !order.estimated_delivery_at) {
+      return null;
+    }
+
+    const estimatedDate = new Date(order.estimated_delivery_at);
+    const minutesRemaining = differenceInMinutes(estimatedDate, now);
+
+    if (minutesRemaining < 1) {
+      return <span className="text-sm text-orange-500 font-semibold">Arriving soon</span>;
+    }
+
+    return (
+      <span className="text-sm text-blue-600 font-semibold">
+        ~{minutesRemaining} min remaining
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Order Tracking</h2>
@@ -140,10 +178,13 @@ export function OrderTracking() {
                       From {order.mom.full_name} • Quantity: {order.quantity}
                     </CardDescription>
                   </div>
-                  <Badge variant={getStatusColor(order.status)} className="flex items-center gap-1">
-                    {getStatusIcon(order.status)}
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-2 text-right">
+                    <Badge variant={getStatusColor(order.status)} className="flex items-center gap-1">
+                      {getStatusIcon(order.status)}
+                      {order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')}
+                    </Badge>
+                    {renderTimeRemaining(order)}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -156,12 +197,31 @@ export function OrderTracking() {
                   </span>
                 </div>
                 
-                {order.delivery_partner && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Truck className="h-4 w-4" />
-                    Delivery Partner: {order.delivery_partner.full_name}
+                <div className="space-y-2 text-sm text-gray-600 border-t pt-4 mt-4">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    <span>Chef: {order.mom.full_name}</span>
+                    {order.mom.phone && (
+                      <a href={`tel:${order.mom.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
+                        <Phone className="h-3 w-3" />
+                        <span>Contact</span>
+                      </a>
+                    )}
                   </div>
-                )}
+
+                  {order.delivery_partner && (
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-gray-500" />
+                      <span>Delivery: {order.delivery_partner.full_name}</span>
+                      {order.delivery_partner.phone && (
+                        <a href={`tel:${order.delivery_partner.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
+                          <Phone className="h-3 w-3" />
+                          <span>Contact</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
                 
                 <div className="mt-4 flex space-x-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div className={`flex-1 ${['placed', 'preparing', 'ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
