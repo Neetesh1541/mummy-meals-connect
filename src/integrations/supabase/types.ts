@@ -175,26 +175,64 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           email: string
           full_name: string | null
           id: string
+          is_active: boolean | null
+          phone: string | null
           user_type: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           email: string
           full_name?: string | null
           id?: string
+          is_active?: boolean | null
+          phone?: string | null
           user_type?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          is_active?: boolean | null
+          phone?: string | null
           user_type?: string | null
         }
         Relationships: []
@@ -207,6 +245,10 @@ export type Database = {
       custom_access_token_hook: {
         Args: { event: Json }
         Returns: Json
+      }
+      has_role: {
+        Args: { _user_id: string; _role: string }
+        Returns: boolean
       }
     }
     Enums: {

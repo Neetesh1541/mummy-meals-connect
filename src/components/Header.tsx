@@ -1,10 +1,19 @@
 
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
-import { User, Home } from "lucide-react";
+import { User, Home, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Header() {
+  const { user, userRole, signOut, loading } = useAuth();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -33,12 +42,34 @@ export function Header() {
 
         <div className="flex items-center space-x-4">
           <ThemeToggle />
-          <Link to="/auth">
-            <Button variant="outline" size="sm" className="gap-2 smooth-transition">
-              <User className="h-4 w-4" />
-              Login
-            </Button>
-          </Link>
+          
+          {loading ? (
+            <div className="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          ) : user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 smooth-transition">
+                  <User className="h-4 w-4" />
+                  {userRole && (
+                    <span className="capitalize">{userRole}</span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={signOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link to="/auth">
+              <Button variant="outline" size="sm" className="gap-2 smooth-transition">
+                <User className="h-4 w-4" />
+                Login
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </header>

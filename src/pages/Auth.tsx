@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { User, Heart, Package } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 type UserRole = "customer" | "mom" | "delivery";
 type AuthMode = "login" | "signup";
@@ -16,6 +18,23 @@ type AuthMode = "login" | "signup";
 export default function Auth() {
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [selectedRole, setSelectedRole] = useState<UserRole>("customer");
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    phone: ""
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const { user, signUp, signIn } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const roles = [
     {
@@ -41,10 +60,39 @@ export default function Auth() {
     }
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle authentication logic here
-    console.log("Auth attempt:", { authMode, selectedRole });
+    setIsSubmitting(true);
+
+    try {
+      if (authMode === "signup") {
+        const userData = {
+          full_name: formData.fullName,
+          user_type: selectedRole,
+          phone: formData.phone
+        };
+        
+        const { error } = await signUp(formData.email, formData.password, userData);
+        
+        if (!error) {
+          // Clear form on successful signup
+          setFormData({ fullName: "", email: "", password: "", phone: "" });
+        }
+      } else {
+        await signIn(formData.email, formData.password);
+      }
+    } catch (error) {
+      console.error("Auth error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -74,6 +122,7 @@ export default function Auth() {
                       return (
                         <button
                           key={role.id}
+                          type="button"
                           onClick={() => setSelectedRole(role.id)}
                           className={`p-4 rounded-lg border-2 text-left smooth-transition hover:scale-105 ${
                             selectedRole === role.id
@@ -100,30 +149,65 @@ export default function Auth() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {authMode === "signup" && (
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" placeholder="Enter your full name" required />
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input 
+                      id="fullName" 
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      placeholder="Enter your full name" 
+                      required 
+                    />
                   </div>
                 )}
                 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="Enter your email" required />
+                  <Input 
+                    id="email" 
+                    name="email"
+                    type="email" 
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Enter your email" 
+                    required 
+                  />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" placeholder="Enter your password" required />
+                  <Input 
+                    id="password" 
+                    name="password"
+                    type="password" 
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter your password" 
+                    required 
+                  />
                 </div>
 
                 {authMode === "signup" && (
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" placeholder="Enter your phone number" required />
+                    <Input 
+                      id="phone" 
+                      name="phone"
+                      type="tel" 
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder="Enter your phone number" 
+                      required 
+                    />
                   </div>
                 )}
 
-                <Button type="submit" className="w-full bg-gradient-to-r from-warm-orange-500 to-warm-orange-600 hover:from-warm-orange-600 hover:to-warm-orange-700">
-                  {authMode === "login" ? "Sign In" : "Create Account"}
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-warm-orange-500 to-warm-orange-600 hover:from-warm-orange-600 hover:to-warm-orange-700"
+                >
+                  {isSubmitting ? "Please wait..." : (authMode === "login" ? "Sign In" : "Create Account")}
                 </Button>
               </form>
 
@@ -136,6 +220,7 @@ export default function Auth() {
 
               <div className="text-center">
                 <button
+                  type="button"
                   onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}
                   className="text-primary hover:underline smooth-transition"
                 >
