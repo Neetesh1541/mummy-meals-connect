@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { ForgotPassword } from "@/components/ForgotPassword";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ type AuthMode = "login" | "signup";
 
 export default function Auth() {
   const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>("customer");
   const [formData, setFormData] = useState({
     fullName: "",
@@ -28,6 +29,7 @@ export default function Auth() {
   
   const { user, signUp, signIn } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -35,6 +37,15 @@ export default function Auth() {
       navigate("/");
     }
   }, [user, navigate]);
+
+  // Handle password reset mode
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    if (mode === 'reset') {
+      setAuthMode('login');
+      setShowForgotPassword(false);
+    }
+  }, [searchParams]);
 
   const roles = [
     {
@@ -94,6 +105,20 @@ export default function Auth() {
       setIsSubmitting(false);
     }
   };
+
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container py-20">
+          <div className="max-w-md mx-auto">
+            <ForgotPassword onBack={() => setShowForgotPassword(false)} />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -218,7 +243,7 @@ export default function Auth() {
                 </span>
               </div>
 
-              <div className="text-center">
+              <div className="text-center space-y-2">
                 <button
                   type="button"
                   onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}
@@ -229,6 +254,18 @@ export default function Auth() {
                     : "Already have an account? Sign in"
                   }
                 </button>
+
+                {authMode === "login" && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-sm text-muted-foreground hover:text-primary smooth-transition"
+                    >
+                      Forgot your password?
+                    </button>
+                  </div>
+                )}
               </div>
 
               {authMode === "signup" && selectedRole && (

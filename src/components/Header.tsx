@@ -1,7 +1,6 @@
-
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
-import { User, Home, LogOut } from "lucide-react";
+import { User, Home, LogOut, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -56,6 +55,12 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="w-full flex items-center">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Profile Settings
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
