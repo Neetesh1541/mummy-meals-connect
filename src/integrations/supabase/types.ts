@@ -48,6 +48,38 @@ export type Database = {
           },
         ]
       }
+      delivery_partner_locations: {
+        Row: {
+          id: string
+          latitude: number
+          longitude: number
+          partner_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          latitude: number
+          longitude: number
+          partner_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          latitude?: number
+          longitude?: number
+          partner_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_partner_locations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu: {
         Row: {
           available: boolean | null

@@ -8,6 +8,7 @@ import { Truck, MapPin, Clock, DollarSign } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 interface AvailableOrder {
   id: string;
@@ -30,6 +31,9 @@ export default function DeliveryDashboard() {
   const { toast } = useToast();
   const [availableOrders, setAvailableOrders] = useState<AvailableOrder[]>([]);
   const [myOrders, setMyOrders] = useState<AvailableOrder[]>([]);
+  const { position, error: geoError, startWatching, stopWatching } = useGeolocation();
+  const [isTracking, setIsTracking] = useState(false);
+
   const [stats, setStats] = useState({
     totalDeliveries: 0,
     activeDeliveries: 0,
@@ -40,9 +44,39 @@ export default function DeliveryDashboard() {
   useEffect(() => {
     if (user) {
       fetchOrders();
-      subscribeToOrderChanges();
+      const channel = subscribeToOrderChanges();
+      return () => {
+        supabase.removeChannel(channel);
+      }
     }
   }, [user]);
+
+  useEffect(() => {
+    const activeDeliveries = myOrders.some(o => o.status === 'picked_up');
+    if (activeDeliveries && !isTracking) {
+      startWatching();
+      setIsTracking(true);
+    } else if (!activeDeliveries && isTracking) {
+      stopWatching();
+      setIsTracking(false);
+    }
+  }, [myOrders, isTracking, startWatching, stopWatching]);
+
+  useEffect(() => {
+    if (position && user && isTracking) {
+      const updateLocation = async () => {
+        await supabase
+          .from('delivery_partner_locations')
+          .upsert({
+            partner_id: user.id,
+            latitude: position.latitude,
+            longitude: position.longitude,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'partner_id' });
+      };
+      updateLocation();
+    }
+  }, [position, user, isTracking]);
 
   const fetchOrders = async () => {
     if (!user) return;
@@ -314,6 +348,15 @@ export default function DeliveryDashboard() {
                 )}
               </CardContent>
             </Card>
+
+            {geoError && (
+             <Card className="animate-fade-in bg-destructive/10 border-destructive/50">
+               <CardHeader>
+                  <CardTitle className="text-destructive">Location Error</CardTitle>
+                  <CardDescription className="text-destructive-foreground">{geoError}</CardDescription>
+               </CardHeader>
+             </Card>
+          )}
           </div>
         </div>
       </main>

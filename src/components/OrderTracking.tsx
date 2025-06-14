@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +6,7 @@ import { Clock, CheckCircle, Truck, MapPin, Phone, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { differenceInMinutes } from "date-fns";
+import { DeliveryMap } from './DeliveryMap';
 
 interface Order {
   id: string;
@@ -27,6 +27,7 @@ interface Order {
     full_name: string;
     phone?: string;
   };
+  delivery_partner_id?: string;
 }
 
 export function OrderTracking() {
@@ -67,6 +68,7 @@ export function OrderTracking() {
           quantity,
           created_at,
           estimated_delivery_at,
+          delivery_partner_id,
           menu!orders_menu_id_fkey(title, price),
           mom:users!orders_mom_id_fkey(full_name, phone),
           delivery_partner:users!orders_delivery_partner_id_fkey(full_name, phone)
@@ -245,6 +247,11 @@ export function OrderTracking() {
                   <span>Out for delivery</span>
                   <span>Delivered</span>
                 </div>
+                {order.status === 'picked_up' && order.delivery_partner_id && (
+                  <div className="mt-4">
+                     <DeliveryMap deliveryPartnerId={order.delivery_partner_id} />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

@@ -7,12 +7,14 @@ import { ChefHat, Users, DollarSign, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { DeliveryMap } from "@/components/DeliveryMap";
 
 interface Order {
   id: string;
   status: string;
   total_amount: number;
   created_at: string;
+  delivery_partner_id?: string;
   menu: {
     title: string;
   };
@@ -60,6 +62,7 @@ export default function MomDashboard() {
           status,
           total_amount,
           created_at,
+          delivery_partner_id,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name)
         `)
@@ -250,6 +253,11 @@ export default function MomDashboard() {
                               </select>
                             </div>
                           </div>
+                          {order.status === 'picked_up' && order.delivery_partner_id && (
+                            <div className="mt-4">
+                              <DeliveryMap deliveryPartnerId={order.delivery_partner_id} />
+                            </div>
+                          )}
                         </CardContent>
                         <div className={`h-1 w-full ${getStatusColorForMom(order.status)}`}></div>
                       </Card>
