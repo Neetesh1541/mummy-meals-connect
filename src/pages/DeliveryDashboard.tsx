@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -24,6 +25,7 @@ export default function DeliveryDashboard() {
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
+    console.log("DeliveryDashboard: Fetching orders..."); // For debugging
     setLoading(true);
     try {
       const { data: available, error: availableError } = await supabase
@@ -95,8 +97,9 @@ export default function DeliveryDashboard() {
   useEffect(() => {
     if (user) {
       fetchOrders();
+      // Using a user-specific channel to ensure clean, isolated real-time updates.
       const channel = supabase
-        .channel('orders-delivery-realtime')
+        .channel(`orders-delivery-realtime-${user.id}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
@@ -110,10 +113,10 @@ export default function DeliveryDashboard() {
         )
         .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
-            console.log(`Successfully subscribed to 'orders' table for Delivery Dashboard`);
+            console.log(`Successfully subscribed to 'orders' table for Delivery Dashboard for user ${user.id}`);
           }
            if (status === 'CHANNEL_ERROR') {
-            console.error(`Subscription error on 'orders' for Delivery Dashboard:`, err);
+            console.error(`Subscription error on 'orders' for Delivery Dashboard for user ${user.id}:`, err);
             toast({
               title: "Connection Error",
               description: "Could not connect to real-time updates. Please refresh the page.",
@@ -123,7 +126,7 @@ export default function DeliveryDashboard() {
         });
 
       return () => {
-        console.log("Cleaning up orders subscription for Delivery Dashboard.");
+        console.log(`Cleaning up orders subscription for Delivery Dashboard for user ${user.id}.`);
         supabase.removeChannel(channel);
       }
     }
