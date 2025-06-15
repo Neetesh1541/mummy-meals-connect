@@ -1,17 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Truck, MapPin, Clock, DollarSign } from "lucide-react";
+import { Truck, MapPin, Clock, DollarSign, Phone, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
-interface AvailableOrder {
+interface OrderInfo {
   id: string;
   status: string;
   total_amount: number;
@@ -21,17 +20,21 @@ interface AvailableOrder {
   };
   customer: {
     full_name: string;
+    phone?: string;
+    address?: any;
   };
   mom: {
     full_name: string;
+    phone?: string;
+    address?: any;
   };
 }
 
 export default function DeliveryDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [availableOrders, setAvailableOrders] = useState<AvailableOrder[]>([]);
-  const [myOrders, setMyOrders] = useState<AvailableOrder[]>([]);
+  const [availableOrders, setAvailableOrders] = useState<OrderInfo[]>([]);
+  const [myOrders, setMyOrders] = useState<OrderInfo[]>([]);
   const { position, error: geoError, startWatching, stopWatching } = useGeolocation();
   const [isTracking, setIsTracking] = useState(false);
 
@@ -93,8 +96,8 @@ export default function DeliveryDashboard() {
           total_amount,
           created_at,
           menu!orders_menu_id_fkey(title),
-          customer:users!orders_customer_id_fkey(full_name),
-          mom:users!orders_mom_id_fkey(full_name)
+          customer:users!orders_customer_id_fkey(full_name, phone, address),
+          mom:users!orders_mom_id_fkey(full_name, phone, address)
         `)
         .eq('status', 'ready')
         .is('delivery_partner_id', null);
@@ -111,8 +114,8 @@ export default function DeliveryDashboard() {
           total_amount,
           created_at,
           menu!orders_menu_id_fkey(title),
-          customer:users!orders_customer_id_fkey(full_name),
-          mom:users!orders_mom_id_fkey(full_name)
+          customer:users!orders_customer_id_fkey(full_name, phone, address),
+          mom:users!orders_mom_id_fkey(full_name, phone, address)
         `)
         .eq('delivery_partner_id', user?.id)
         .in('status', ['picked_up', 'delivered']);
@@ -199,6 +202,12 @@ export default function DeliveryDashboard() {
     }
   };
 
+  const formatAddress = (address: any) => {
+    if (!address) return 'Not provided';
+    const { line1, city, state, postal_code } = address;
+    return [line1, city, state, postal_code].filter(Boolean).join(', ');
+  };
+
   return (
     <div className="min-h-screen bg-background relative animated-soft-gradient">
       <Header />
@@ -283,17 +292,35 @@ export default function DeliveryDashboard() {
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <h4 className="font-semibold">{order.menu.title}</h4>
-                            <p className="text-sm text-gray-600">From: {order.mom.full_name}</p>
-                            <p className="text-sm text-gray-600">To: {order.customer.full_name}</p>
+                            <p className="text-sm text-gray-500">
+                                {new Date(order.created_at).toLocaleString()}
+                            </p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-green-600">₹{order.total_amount}</p>
                             <Badge variant="default">Ready</Badge>
                           </div>
                         </div>
+
+                        <div className="border-t pt-2 mt-2 space-y-3 text-sm">
+                          <div>
+                            <h5 className="font-semibold mb-1">Pickup From (Chef)</h5>
+                            <div className="flex items-center gap-2 text-gray-600"><User className="h-4 w-4" /> {order.mom.full_name}</div>
+                            <div className="flex items-center gap-2 text-gray-600 mt-1"><Phone className="h-4 w-4" /> {order.mom.phone || 'Not provided'}</div>
+                            <div className="flex items-start gap-2 text-gray-600 mt-1"><MapPin className="h-4 w-4 mt-1" /> <span>{formatAddress(order.mom.address)}</span></div>
+                          </div>
+                           <div className="border-t"></div>
+                          <div>
+                            <h5 className="font-semibold mb-1">Deliver To (Customer)</h5>
+                            <div className="flex items-center gap-2 text-gray-600"><User className="h-4 w-4" /> {order.customer.full_name}</div>
+                            <div className="flex items-center gap-2 text-gray-600 mt-1"><Phone className="h-4 w-4" /> {order.customer.phone || 'Not provided'}</div>
+                             <div className="flex items-start gap-2 text-gray-600 mt-1"><MapPin className="h-4 w-4 mt-1" /> <span>{formatAddress(order.customer.address)}</span></div>
+                          </div>
+                        </div>
+
                         <Button
                           onClick={() => acceptOrder(order.id)}
-                          className="w-full mt-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                          className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
                         >
                           Accept Delivery
                         </Button>
@@ -323,7 +350,6 @@ export default function DeliveryDashboard() {
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <h4 className="font-semibold">{order.menu.title}</h4>
-                            <p className="text-sm text-gray-600">Customer: {order.customer.full_name}</p>
                             <p className="text-sm text-gray-500">
                               {new Date(order.created_at).toLocaleDateString()}
                             </p>
@@ -335,10 +361,27 @@ export default function DeliveryDashboard() {
                             </Badge>
                           </div>
                         </div>
+
+                         <div className="border-t pt-2 mt-2 space-y-3 text-sm">
+                          <div>
+                            <h5 className="font-semibold mb-1">Pickup From (Chef)</h5>
+                            <div className="flex items-center gap-2 text-gray-600"><User className="h-4 w-4" /> {order.mom.full_name}</div>
+                            <div className="flex items-center gap-2 text-gray-600 mt-1"><Phone className="h-4 w-4" /> {order.mom.phone || 'Not provided'}</div>
+                            <div className="flex items-start gap-2 text-gray-600 mt-1"><MapPin className="h-4 w-4 mt-1" /> <span>{formatAddress(order.mom.address)}</span></div>
+                          </div>
+                           <div className="border-t"></div>
+                          <div>
+                            <h5 className="font-semibold mb-1">Deliver To (Customer)</h5>
+                            <div className="flex items-center gap-2 text-gray-600"><User className="h-4 w-4" /> {order.customer.full_name}</div>
+                            <div className="flex items-center gap-2 text-gray-600 mt-1"><Phone className="h-4 w-4" /> {order.customer.phone || 'Not provided'}</div>
+                             <div className="flex items-start gap-2 text-gray-600 mt-1"><MapPin className="h-4 w-4 mt-1" /> <span>{formatAddress(order.customer.address)}</span></div>
+                          </div>
+                        </div>
+
                         {order.status === 'picked_up' && (
                           <Button
                             onClick={() => completeDelivery(order.id)}
-                            className="w-full mt-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                            className="w-full mt-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                           >
                             Mark as Delivered
                           </Button>

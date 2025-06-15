@@ -22,6 +22,7 @@ interface Order {
   mom: {
     full_name: string;
     phone?: string;
+    address?: any;
   };
   delivery_partner?: {
     full_name: string;
@@ -70,7 +71,7 @@ export function OrderTracking() {
           estimated_delivery_at,
           delivery_partner_id,
           menu!orders_menu_id_fkey(title, price),
-          mom:users!orders_mom_id_fkey(full_name, phone),
+          mom:users!orders_mom_id_fkey(full_name, phone, address),
           delivery_partner:users!orders_delivery_partner_id_fkey(full_name, phone)
         `)
         .eq('customer_id', user?.id)
@@ -157,6 +158,12 @@ export function OrderTracking() {
     );
   };
 
+  const formatAddress = (address: any) => {
+    if (!address) return 'Not provided';
+    const { line1, city, state, postal_code } = address;
+    return [line1, city, state, postal_code].filter(Boolean).join(', ');
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Order Tracking</h2>
@@ -200,34 +207,16 @@ export function OrderTracking() {
                   </span>
                 </div>
                 
-                <div className="space-y-2 text-sm text-gray-600 border-t pt-4 mt-4">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-gray-500" />
-                    <span>Chef: {order.mom.full_name}</span>
-                    <div className="ml-auto flex items-center gap-2">
-                      {order.mom.phone ? (
-                        <>
-                          <span className="text-muted-foreground">{order.mom.phone}</span>
-                          <a href={`tel:${order.mom.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
-                            <Phone className="h-3 w-3" />
-                            <span>Call</span>
-                          </a>
-                        </>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">Not provided</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {order.delivery_partner && (
+                <div className="space-y-4 text-sm text-gray-600 border-t pt-4 mt-4">
+                  <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Truck className="h-4 w-4 text-gray-500" />
-                      <span>Delivery: {order.delivery_partner.full_name}</span>
+                      <User className="h-4 w-4 text-gray-500" />
+                      <span className="font-semibold">Chef: {order.mom.full_name}</span>
                       <div className="ml-auto flex items-center gap-2">
-                        {order.delivery_partner.phone ? (
+                        {order.mom.phone ? (
                           <>
-                            <span className="text-muted-foreground">{order.delivery_partner.phone}</span>
-                            <a href={`tel:${order.delivery_partner.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                            <span className="text-muted-foreground">{order.mom.phone}</span>
+                            <a href={`tel:${order.mom.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
                               <Phone className="h-3 w-3" />
                               <span>Call</span>
                             </a>
@@ -236,6 +225,37 @@ export function OrderTracking() {
                           <span className="text-xs text-muted-foreground italic">Not provided</span>
                         )}
                       </div>
+                    </div>
+                     <div className="flex items-start gap-2 pl-6">
+                        <MapPin className="h-4 w-4 text-gray-500 mt-1" />
+                        <span>{formatAddress(order.mom.address)}</span>
+                    </div>
+                  </div>
+
+                  {order.delivery_partner && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Truck className="h-4 w-4 text-gray-500" />
+                        <span className="font-semibold">Delivery: {order.delivery_partner.full_name}</span>
+                        <div className="ml-auto flex items-center gap-2">
+                          {order.delivery_partner.phone ? (
+                            <>
+                              <span className="text-muted-foreground">{order.delivery_partner.phone}</span>
+                              <a href={`tel:${order.delivery_partner.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
+                                <Phone className="h-3 w-3" />
+                                <span>Call</span>
+                              </a>
+                            </>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">Not provided</span>
+                          )}
+                        </div>
+                      </div>
+                       {order.status === 'picked_up' && order.delivery_partner_id && (
+                        <div className="mt-2 pl-6">
+                           <DeliveryMap deliveryPartnerId={order.delivery_partner_id} />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -255,7 +275,7 @@ export function OrderTracking() {
                   <span>Out for delivery</span>
                   <span>Delivered</span>
                 </div>
-                {order.status === 'picked_up' && order.delivery_partner_id && (
+                {order.status === 'picked_up' && order.delivery_partner_id && !order.delivery_partner && (
                   <div className="mt-4">
                      <DeliveryMap deliveryPartnerId={order.delivery_partner_id} />
                   </div>

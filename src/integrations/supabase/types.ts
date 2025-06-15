@@ -292,6 +292,7 @@ export type Database = {
       }
       users: {
         Row: {
+          address: Json | null
           avatar_url: string | null
           created_at: string | null
           email: string
@@ -302,6 +303,7 @@ export type Database = {
           user_type: string | null
         }
         Insert: {
+          address?: Json | null
           avatar_url?: string | null
           created_at?: string | null
           email: string
@@ -312,6 +314,7 @@ export type Database = {
           user_type?: string | null
         }
         Update: {
+          address?: Json | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string
