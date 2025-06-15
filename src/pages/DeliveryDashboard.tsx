@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -97,26 +96,24 @@ export default function DeliveryDashboard() {
   useEffect(() => {
     if (user) {
       fetchOrders();
-      // Using a user-specific channel to ensure clean, isolated real-time updates.
+      // All delivery partners subscribe to the same channel to get updates for all orders.
       const channel = supabase
-        .channel(`orders-delivery-realtime-${user.id}`)
+        .channel('public:orders')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
           (payload) => {
             console.log('DeliveryDashboard: Change received on orders table!', payload);
-            toast({
-              description: "The list of deliveries has been updated.",
-            });
+            // The UI will refresh automatically. A toast on every update is too noisy.
             fetchOrders();
           }
         )
         .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
-            console.log(`Successfully subscribed to 'orders' table for Delivery Dashboard for user ${user.id}`);
+            console.log(`Successfully subscribed to 'public:orders' for Delivery Dashboard`);
           }
            if (status === 'CHANNEL_ERROR') {
-            console.error(`Subscription error on 'orders' for Delivery Dashboard for user ${user.id}:`, err);
+            console.error(`Subscription error on 'public:orders' for Delivery Dashboard:`, err);
             toast({
               title: "Connection Error",
               description: "Could not connect to real-time updates. Please refresh the page.",
@@ -126,7 +123,7 @@ export default function DeliveryDashboard() {
         });
 
       return () => {
-        console.log(`Cleaning up orders subscription for Delivery Dashboard for user ${user.id}.`);
+        console.log(`Cleaning up public:orders subscription for Delivery Dashboard.`);
         supabase.removeChannel(channel);
       }
     }
