@@ -130,6 +130,7 @@ export default function DeliveryDashboard() {
         title: "Order Accepted",
         description: "You have accepted the order.",
       });
+      fetchOrders(); // Manually trigger a refresh
     } catch (error: any) {
       console.error("Error accepting order:", error);
       toast({
@@ -152,6 +153,7 @@ export default function DeliveryDashboard() {
         title: "Order Completed",
         description: "You have completed the order.",
       });
+      fetchOrders(); // Manually trigger a refresh
     } catch (error: any) {
       console.error("Error completing order:", error);
       toast({
