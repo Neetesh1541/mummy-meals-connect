@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Plus, Minus } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +14,7 @@ interface MenuItem {
   price: number;
   available: boolean;
   mom_id: string;
+  image_url: string | null;
   users: {
     full_name: string;
   } | null;
@@ -197,8 +197,15 @@ export function MenuBrowser() {
           const cartItem = getCartItem(item.id);
           
           return (
-            <Card key={item.id} className="hover:shadow-lg transition-all duration-300 hover:scale-105 animate-fade-in">
-              <CardHeader>
+            <Card key={item.id} className="hover:shadow-lg transition-all duration-300 hover:scale-105 animate-fade-in flex flex-col overflow-hidden">
+              {item.image_url ? (
+                <img src={item.image_url} alt={item.title || 'Menu item'} className="w-full h-48 object-cover" />
+              ) : (
+                <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                  <Camera className="h-12 w-12 text-gray-400" />
+                </div>
+              )}
+              <CardHeader className="flex-grow">
                 <CardTitle className="flex justify-between items-start">
                   <span>{item.title}</span>
                   <Badge variant="secondary">

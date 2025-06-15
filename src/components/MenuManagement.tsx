@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +18,7 @@ interface MenuItem {
   price: number;
   available: boolean;
   created_at: string;
+  image_url: string | null;
 }
 
 export function MenuManagement() {
@@ -33,6 +33,7 @@ export function MenuManagement() {
     price: "",
     available: true,
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -87,12 +88,33 @@ export function MenuManagement() {
     e.preventDefault();
     
     try {
+      let imageUrl = editingItem?.image_url || null;
+
+      if (imageFile) {
+        const filePath = `${user?.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
+        
+        // If editing and there's a new file, upload it.
+        // If there was an old file, we could delete it here, but for now we'll just upload the new one.
+        const { error: uploadError } = await supabase.storage
+          .from('menu-images')
+          .upload(filePath, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('menu-images')
+          .getPublicUrl(filePath);
+        
+        imageUrl = urlData.publicUrl;
+      }
+
       const itemData = {
         title: formData.title,
         description: formData.description,
         price: parseFloat(formData.price),
         available: formData.available,
         mom_id: user?.id,
+        image_url: imageUrl,
       };
 
       if (editingItem) {
@@ -121,6 +143,7 @@ export function MenuManagement() {
       }
 
       setFormData({ title: "", description: "", price: "", available: true });
+      setImageFile(null);
       setIsAddingItem(false);
       setEditingItem(null);
     } catch (error) {
@@ -187,6 +210,7 @@ export function MenuManagement() {
       price: item.price.toString(),
       available: item.available,
     });
+    setImageFile(null);
     setIsAddingItem(true);
   };
 
@@ -238,6 +262,21 @@ export function MenuManagement() {
                   required
                 />
               </div>
+              <div>
+                <Label htmlFor="image">Image</Label>
+                <Input
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)}
+                  className="file:bg-warm-orange-100 file:text-warm-orange-700 file:border-0 file:px-4 file:py-2 file:rounded-md file:mr-4 hover:file:bg-warm-orange-200"
+                />
+                {editingItem?.image_url && !imageFile && (
+                  <div className="mt-2">
+                    <img src={editingItem.image_url} alt={editingItem.title} className="w-24 h-24 object-cover rounded-md mt-1" />
+                  </div>
+                )}
+              </div>
               <div className="flex items-center space-x-2">
                 <Switch
                   id="available"
@@ -257,6 +296,7 @@ export function MenuManagement() {
                     setIsAddingItem(false);
                     setEditingItem(null);
                     setFormData({ title: "", description: "", price: "", available: true });
+                    setImageFile(null);
                   }}
                 >
                   Cancel
@@ -269,8 +309,15 @@ export function MenuManagement() {
 
       <div className="grid gap-4">
         {menuItems.map((item) => (
-          <Card key={item.id} className="hover:shadow-lg transition-shadow animate-fade-in">
-            <CardContent className="p-6">
+          <Card key={item.id} className="hover:shadow-lg transition-shadow animate-fade-in flex flex-col sm:flex-row overflow-hidden">
+            {item.image_url ? (
+                <img src={item.image_url} alt={item.title} className="w-full sm:w-48 h-48 sm:h-auto object-cover" />
+              ) : (
+                <div className="w-full sm:w-48 h-48 sm:h-auto bg-gray-200 flex items-center justify-center">
+                  <Camera className="h-12 w-12 text-gray-400" />
+                </div>
+            )}
+            <CardContent className="p-6 flex-1">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
