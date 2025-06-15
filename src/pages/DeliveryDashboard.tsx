@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -124,16 +123,25 @@ export default function DeliveryDashboard() {
     if (!user) return;
     setUpdatingOrder(orderId);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('orders')
         .update({ delivery_partner_id: user.id, status: 'picked_up' })
         .eq('id', orderId)
         .eq('status', 'ready')
         .is('delivery_partner_id', null)
-        .select()
-        .single(); // .single() will error if 0 rows are updated, e.g. in a race condition
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        // Handle postgres-level errors, e.g. from the trigger
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        // This is our race condition. The order is no longer available.
+        const raceConditionError = new Error("This order is no longer available. It may have been accepted by another driver.");
+        raceConditionError.name = "RaceConditionError";
+        throw raceConditionError;
+      }
 
       toast({
         title: "Order Accepted",
@@ -142,15 +150,15 @@ export default function DeliveryDashboard() {
       fetchOrders(); // Manually trigger a refresh
     } catch (error: any) {
       console.error("Error accepting order:", error);
-      let description = "Failed to accept the order.";
-      if (error.code === 'PGRST116') { // Specific error for .single() not finding a row
-        description = "This order is no longer available. It may have been accepted by another driver.";
-      } else if (error.message) {
-        description = error.message;
+      
+      // If it was our race condition, we refresh the list.
+      if (error.name === "RaceConditionError") {
+        fetchOrders(); // Refresh the list to remove the stale order
       }
+
       toast({
         title: "Error Accepting Order",
-        description,
+        description: error.message || "Failed to accept the order.",
         variant: "destructive"
       });
     } finally {
@@ -162,16 +170,22 @@ export default function DeliveryDashboard() {
     if (!user) return;
     setUpdatingOrder(orderId);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('orders')
         .update({ status: 'delivered' })
         .eq('id', orderId)
         .eq('delivery_partner_id', user.id)
         .eq('status', 'picked_up')
-        .select()
-        .single();
+        .select();
 
       if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        const raceConditionError = new Error("Could not complete this order. Its status may have changed.");
+        raceConditionError.name = "RaceConditionError";
+        throw raceConditionError;
+      }
+
       toast({
         title: "Order Completed",
         description: "You have completed the order.",
@@ -179,6 +193,11 @@ export default function DeliveryDashboard() {
       fetchOrders(); // Manually trigger a refresh
     } catch (error: any) {
       console.error("Error completing order:", error);
+
+      if (error.name === "RaceConditionError") {
+        fetchOrders();
+      }
+      
       toast({
         title: "Error Completing Order",
         description: error.message || "Failed to complete the order. Please try again.",
