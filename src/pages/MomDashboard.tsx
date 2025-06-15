@@ -1,3 +1,4 @@
+
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MenuManagement } from "@/components/MenuManagement";
@@ -50,6 +51,7 @@ export default function MomDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [stats, setStats] = useState({
     totalOrders: 0,
     activeOrders: 0,
@@ -152,6 +154,7 @@ export default function MomDashboard() {
   }, [user]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    setUpdatingOrderId(orderId);
     try {
       const { error } = await supabase
         .from('orders')
@@ -170,6 +173,8 @@ export default function MomDashboard() {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setUpdatingOrderId(null);
     }
   };
 
@@ -180,11 +185,13 @@ export default function MomDashboard() {
   };
 
   const renderStatusControl = (order: Order) => {
+    const isUpdating = updatingOrderId === order.id;
+
     switch (order.status) {
       case 'placed':
-        return <Button size="sm" className="w-full mt-2" onClick={() => updateOrderStatus(order.id, 'preparing')}>Start Preparing</Button>;
+        return <Button size="sm" className="w-full mt-2" onClick={() => updateOrderStatus(order.id, 'preparing')} disabled={isUpdating}>{isUpdating ? "Updating..." : "Start Preparing"}</Button>;
       case 'preparing':
-        return <Button size="sm" className="w-full mt-2" onClick={() => updateOrderStatus(order.id, 'ready')}>Mark as Ready for Pickup</Button>;
+        return <Button size="sm" className="w-full mt-2" onClick={() => updateOrderStatus(order.id, 'ready')} disabled={isUpdating}>{isUpdating ? "Updating..." : "Mark as Ready for Pickup"}</Button>;
       default:
         return (
             <div className="text-right mt-2">
