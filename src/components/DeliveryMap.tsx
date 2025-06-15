@@ -8,7 +8,7 @@ import { Truck } from 'lucide-react';
 // IMPORTANT: Add your Mapbox public token here.
 // You can get one from https://www.mapbox.com/
 // For production, it's best to store this as an environment variable.
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || 'pk.eyJ1Ijoic2hvcnRzZWFyY2giLCJhIjoiY2x4b3k0eHlwMGh2eTJrcW5uNjlua2M5aSJ9.7x_252nB1R-2QpT21gQ9qA'; // Replace with your token
+mapboxgl.accessToken = 'pk.eyJ1Ijoic2hvcnRzZWFyY2giLCJhIjoiY2x4b3k0eHlwMGh2eTJrcW5uNjlua2M5aSJ9.7x_252nB1R-2QpT21gQ9qA'; // Replace with your token
 
 interface DeliveryMapProps {
   deliveryPartnerId: string;
@@ -46,7 +46,7 @@ export function DeliveryMap({ deliveryPartnerId }: DeliveryMapProps) {
     if (!map.current && mapContainer.current && location) {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v11',
+        style: 'mapbox://styles/mapbox/dark-v11',
         center: [location.longitude, location.latitude],
         zoom: 14
       });
@@ -62,7 +62,14 @@ export function DeliveryMap({ deliveryPartnerId }: DeliveryMapProps) {
       } else {
         const el = document.createElement('div');
         el.className = 'marker';
-        el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/><path d="M14 9h4l4 4v4h-8v-4h-4V9Z"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>`;
+        el.innerHTML = `
+          <div class="relative flex items-center justify-center">
+            <div class="absolute w-8 h-8 bg-blue-500 rounded-full animate-ping opacity-75"></div>
+            <div class="relative w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/><path d="M14 9h4l4 4v4h-8v-4h-4V9Z"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+            </div>
+          </div>
+        `;
 
         marker.current = new mapboxgl.Marker(el)
           .setLngLat([location.longitude, location.latitude])
@@ -116,4 +123,3 @@ export function DeliveryMap({ deliveryPartnerId }: DeliveryMapProps) {
 
   return <div ref={mapContainer} className="h-64 w-full rounded-lg" />;
 }
-
