@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -40,6 +39,7 @@ export default function DeliveryDashboard() {
   const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
@@ -76,7 +76,15 @@ export default function DeliveryDashboard() {
         .eq('delivery_partner_id', user.id);
 
       if (mineError) throw mineError;
-      setMyOrders(mine || []);
+      
+      const statusOrder: { [key: string]: number } = { 'picked_up': 1, 'delivered': 2 };
+      const sortedMine = (mine || []).sort((a, b) => {
+        const aVal = statusOrder[a.status] || 99;
+        const bVal = statusOrder[b.status] || 99;
+        return aVal - bVal;
+      });
+      setMyOrders(sortedMine);
+
     } catch (error: any) {
       console.error("Error fetching orders:", error);
       toast({
@@ -119,6 +127,7 @@ export default function DeliveryDashboard() {
 
   const acceptOrder = async (orderId: string) => {
     if (!user) return;
+    setUpdatingOrder(orderId);
     try {
       const { error } = await supabase
         .from('orders')
@@ -138,10 +147,13 @@ export default function DeliveryDashboard() {
         description: error.message || "Failed to accept the order.",
         variant: "destructive"
       });
+    } finally {
+      setUpdatingOrder(null);
     }
   };
 
   const completeOrder = async (orderId: string) => {
+    setUpdatingOrder(orderId);
     try {
       const { error } = await supabase
         .from('orders')
@@ -161,6 +173,8 @@ export default function DeliveryDashboard() {
         description: error.message || "Failed to complete the order.",
         variant: "destructive"
       });
+    } finally {
+      setUpdatingOrder(null);
     }
   };
 
@@ -249,8 +263,8 @@ export default function DeliveryDashboard() {
                             </div>
                           </div>
                         </div>
-                        <Button className="w-full mt-4" onClick={() => acceptOrder(order.id)}>
-                          Accept Delivery
+                        <Button className="w-full mt-4" onClick={() => acceptOrder(order.id)} disabled={updatingOrder === order.id}>
+                          {updatingOrder === order.id ? 'Accepting...' : 'Accept Delivery'}
                         </Button>
                       </CardContent>
                     </Card>
@@ -332,8 +346,8 @@ export default function DeliveryDashboard() {
                         </Collapsible>
 
                         {order.status === 'picked_up' && (
-                          <Button className="w-full mt-4" onClick={() => completeOrder(order.id)}>
-                            Mark as Delivered
+                          <Button className="w-full mt-4" onClick={() => completeOrder(order.id)} disabled={updatingOrder === order.id}>
+                            {updatingOrder === order.id ? 'Completing...' : 'Mark as Delivered'}
                           </Button>
                         )}
                       </CardContent>
