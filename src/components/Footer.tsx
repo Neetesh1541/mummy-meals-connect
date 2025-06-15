@@ -1,7 +1,26 @@
+
 import { Link } from "react-router-dom";
 import { Heart, Github, User, Mail, Star } from "lucide-react";
 
 export function Footer() {
+  const reviews = [
+    {
+      name: "Anjali S.",
+      text: "The food feels just like home. As a student living far away, Mummy Meals is a lifesaver!",
+      rating: 5,
+    },
+    {
+      name: "Rohan K.",
+      text: "Amazing variety and always delivered on time. The quality is consistently great.",
+      rating: 5,
+    },
+    {
+      name: "Priya M.",
+      text: "I love supporting local moms and the food is delicious. A win-win!",
+      rating: 4,
+    },
+  ];
+
   return (
     <footer className="bg-muted/50 mt-20">
       <div className="container py-12">
@@ -50,6 +69,7 @@ export function Footer() {
             <h3 className="font-semibold">Made with ❤️ by</h3>
             <div className="space-y-2 text-sm">
               <p className="font-medium">Neetesh Kumar</p>
+              <p className="text-muted-foreground italic">"I started Mummy Meals to bridge the distance between home and heart, one meal at a time. Hope you enjoy it!"</p>
               <p className="text-muted-foreground">3rd-year CSE, AKTU</p>
               <div className="flex space-x-3">
                 <a 
@@ -74,6 +94,23 @@ export function Footer() {
                 <p>Core Team - Azure Dev Community</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="mt-12 border-t pt-8">
+          <h3 className="text-center font-semibold text-lg mb-6">What Our Customers Say</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {reviews.map((review, index) => (
+              <div key={index} className="bg-card p-6 rounded-lg shadow-sm animate-fade-in">
+                <div className="flex items-center mb-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                  ))}
+                </div>
+                <p className="text-muted-foreground italic mb-4">"{review.text}"</p>
+                <p className="font-semibold text-right">- {review.name}</p>
+              </div>
+            ))}
           </div>
         </div>
 
