@@ -1,37 +1,15 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, User, Phone, MapPin, Truck } from "lucide-react";
 import { WavyBackground } from "@/components/WavyBackground";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChatBox } from "@/components/ChatBox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { MessageSquare } from "lucide-react";
-
-interface Order {
-  id: string;
-  status: string;
-  menu: {
-    title: string;
-  };
-  quantity: number;
-  shipping_details: any;
-  customer: {
-    full_name: string;
-    phone: string;
-  };
-  mom: {
-    full_name: string;
-    phone: string;
-    address: any;
-  };
-}
+import { Order } from "@/types/order";
+import { AvailableDeliveriesTab } from "@/components/delivery/AvailableDeliveriesTab";
+import { MyDeliveriesTab } from "@/components/delivery/MyDeliveriesTab";
 
 export default function DeliveryDashboard() {
   const { user } = useAuth();
@@ -178,12 +156,6 @@ export default function DeliveryDashboard() {
     }
   };
 
-  const formatAddress = (address: any) => {
-    if (!address) return 'Not provided';
-    const { line1, city, state, postal_code } = address;
-    return [line1, city, state, postal_code].filter(Boolean).join(', ');
-  };
-
   if (loading) {
     return <div className="text-center py-8">Loading deliveries...</div>;
   }
@@ -208,153 +180,19 @@ export default function DeliveryDashboard() {
               <TabsTrigger value="available">Available Deliveries</TabsTrigger>
               <TabsTrigger value="mine">My Deliveries</TabsTrigger>
             </TabsList>
-            <TabsContent value="available" className="animate-fade-in">
-              <h2 className="text-2xl font-bold mb-4">Available Deliveries</h2>
-              {availableOrders.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-12">
-                    <Truck className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No deliveries available</h3>
-                    <p className="text-gray-600">Check back later for new opportunities!</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid md:grid-cols-2 gap-6">
-                  {availableOrders.map((order) => (
-                    <Card key={order.id} className="animate-fade-in">
-                      <CardHeader>
-                        <CardTitle className="text-lg">Order #{order.id.substring(0, 8)}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex justify-between items-center text-sm">
-                          <div className="font-semibold">{order.menu.title}</div>
-                          <div>Qty: {order.quantity}</div>
-                        </div>
-                        <div className="text-xs text-gray-500 mb-2">
-                          To be delivered to {order.shipping_details.name}
-                        </div>
-                        <div className="border-t pt-2 mt-2 space-y-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-gray-500" />
-                              <span className="font-semibold">Customer: {order.customer.full_name}</span>
-                              <a href={`tel:${order.customer.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
-                                <Phone className="h-3 w-3" />
-                                <span>Call</span>
-                              </a>
-                            </div>
-                            <div className="flex items-start gap-2 pl-6">
-                              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
-                              <span className="text-xs">{formatAddress(order.shipping_details.address)}</span>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-gray-500" />
-                              <span className="font-semibold">Chef: {order.mom.full_name}</span>
-                              <a href={`tel:${order.mom.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
-                                <Phone className="h-3 w-3" />
-                                <span>Call</span>
-                              </a>
-                            </div>
-                            <div className="flex items-start gap-2 pl-6">
-                              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
-                              <span className="text-xs">{formatAddress(order.mom.address)}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <Button className="w-full mt-4" onClick={() => acceptOrder(order.id)} disabled={updatingOrder === order.id}>
-                          {updatingOrder === order.id ? 'Accepting...' : 'Accept Delivery'}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+            <TabsContent value="available">
+              <AvailableDeliveriesTab
+                orders={availableOrders}
+                onAccept={acceptOrder}
+                updatingOrderId={updatingOrder}
+              />
             </TabsContent>
-            <TabsContent value="mine" className="animate-fade-in">
-              <h2 className="text-2xl font-bold mb-4">My Deliveries</h2>
-              {myOrders.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-12">
-                    <Truck className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No deliveries accepted yet</h3>
-                    <p className="text-gray-600">Accept an order to see it here!</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid md:grid-cols-2 gap-6">
-                  {myOrders.map((order) => (
-                    <Card key={order.id} className="animate-fade-in">
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg">Order #{order.id.substring(0, 8)}</CardTitle>
-                          <Badge variant={order.status === 'picked_up' ? 'secondary' : 'default'}>
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex justify-between items-center text-sm">
-                          <div className="font-semibold">{order.menu.title}</div>
-                          <div>Qty: {order.quantity}</div>
-                        </div>
-                        <div className="text-xs text-gray-500 mb-2">
-                          To be delivered to {order.shipping_details.name}
-                        </div>
-                        <div className="border-t pt-2 mt-2 space-y-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-gray-500" />
-                              <span className="font-semibold">Customer: {order.customer.full_name}</span>
-                              <a href={`tel:${order.customer.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
-                                <Phone className="h-3 w-3" />
-                                <span>Call</span>
-                              </a>
-                            </div>
-                            <div className="flex items-start gap-2 pl-6">
-                              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
-                              <span className="text-xs">{formatAddress(order.shipping_details.address)}</span>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-gray-500" />
-                              <span className="font-semibold">Chef: {order.mom.full_name}</span>
-                              <a href={`tel:${order.mom.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
-                                <Phone className="h-3 w-3" />
-                                <span>Call</span>
-                              </a>
-                            </div>
-                            <div className="flex items-start gap-2 pl-6">
-                              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
-                              <span className="text-xs">{formatAddress(order.mom.address)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Collapsible className="mt-4">
-                          <CollapsibleTrigger asChild>
-                            <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-                              <MessageSquare className="h-4 w-4" />
-                              <span>Chat about this order</span>
-                            </Button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent className="mt-4">
-                            <ChatBox orderId={order.id} />
-                          </CollapsibleContent>
-                        </Collapsible>
-
-                        {order.status === 'picked_up' && (
-                          <Button className="w-full mt-4" onClick={() => completeOrder(order.id)} disabled={updatingOrder === order.id}>
-                            {updatingOrder === order.id ? 'Completing...' : 'Mark as Delivered'}
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+            <TabsContent value="mine">
+              <MyDeliveriesTab
+                orders={myOrders}
+                onComplete={completeOrder}
+                updatingOrderId={updatingOrder}
+              />
             </TabsContent>
           </Tabs>
         </div>
