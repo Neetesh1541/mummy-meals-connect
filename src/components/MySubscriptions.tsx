@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -133,7 +132,7 @@ export function MySubscriptions() {
                         </Button>
                     }
                      {sub.status !== 'cancelled' &&
-                        <Button variant="destructive" size="sm" onClick={() => updateSubscriptionstatus(sub.id, 'cancelled')}>
+                        <Button variant="destructive" size="sm" onClick={() => updateSubscriptionStatus(sub.id, 'cancelled')}>
                             <XCircle className="h-4 w-4 mr-2" /> Cancel
                         </Button>
                      }
