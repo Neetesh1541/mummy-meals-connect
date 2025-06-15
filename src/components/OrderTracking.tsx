@@ -10,11 +10,13 @@ import { DeliveryMap } from './DeliveryMap';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChatBox } from "./ChatBox";
 import { Order } from "@/types/order";
+import { useToast } from "@/hooks/use-toast";
 
 export function OrderTracking() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [now, setNow] = useState(new Date());
+  const { toast } = useToast();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -65,8 +67,12 @@ export function OrderTracking() {
             table: 'orders',
             filter: `customer_id=eq.${user.id}`,
           },
-          () => {
-            console.log('OrderTracking: Change received on orders table!');
+          (payload) => {
+            console.log('OrderTracking: Change received on orders table!', payload);
+            toast({
+              title: "Order Update",
+              description: "Your order details have been updated.",
+            });
             fetchOrders();
           }
         )
@@ -76,6 +82,11 @@ export function OrderTracking() {
           }
           if (status === 'CHANNEL_ERROR') {
             console.error(`Subscription error for order tracking for user ${user.id}:`, err);
+            toast({
+              title: "Connection Error",
+              description: "Could not get live order updates. Please refresh the page.",
+              variant: "destructive"
+            });
           }
         });
 
@@ -83,7 +94,7 @@ export function OrderTracking() {
         supabase.removeChannel(channel);
       };
     }
-  }, [user, fetchOrders]);
+  }, [user, fetchOrders, toast]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

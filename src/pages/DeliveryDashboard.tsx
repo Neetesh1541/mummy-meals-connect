@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -12,6 +11,7 @@ import { AvailableDeliveriesTab } from "@/components/delivery/AvailableDeliverie
 import { MyDeliveriesTab } from "@/components/delivery/MyDeliveriesTab";
 import { StatCard } from "@/components/delivery/StatCard";
 import { DollarSign, Truck } from "lucide-react";
+import { LocationSharer } from "@/components/delivery/LocationSharer";
 
 export default function DeliveryDashboard() {
   const { user } = useAuth();
@@ -96,13 +96,15 @@ export default function DeliveryDashboard() {
     if (user) {
       fetchOrders();
       const channel = supabase
-        .channel('orders-delivery-realtime') // Use a new channel name to ensure a fresh subscription
+        .channel('orders-delivery-realtime')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
           (payload) => {
             console.log('DeliveryDashboard: Change received on orders table!', payload);
-            console.log('Refetching all orders to update UI.');
+            toast({
+              description: "The list of deliveries has been updated.",
+            });
             fetchOrders();
           }
         )
@@ -112,6 +114,11 @@ export default function DeliveryDashboard() {
           }
            if (status === 'CHANNEL_ERROR') {
             console.error(`Subscription error on 'orders' for Delivery Dashboard:`, err);
+            toast({
+              title: "Connection Error",
+              description: "Could not connect to real-time updates. Please refresh the page.",
+              variant: "destructive"
+            });
           }
         });
 
@@ -120,7 +127,7 @@ export default function DeliveryDashboard() {
         supabase.removeChannel(channel);
       }
     }
-  }, [user, fetchOrders]);
+  }, [user, fetchOrders, toast]);
 
   const acceptOrder = async (orderId: string) => {
     if (!user) return;
@@ -243,6 +250,10 @@ export default function DeliveryDashboard() {
               icon={<Truck className="h-4 w-4 text-muted-foreground" />}
               description="Making customers happy"
             />
+          </div>
+
+          <div className="mb-8 animate-fade-in">
+            <LocationSharer />
           </div>
 
           <Tabs defaultValue="available" className="w-full">
