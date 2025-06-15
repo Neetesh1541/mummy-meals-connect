@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -126,19 +127,30 @@ export default function DeliveryDashboard() {
       const { error } = await supabase
         .from('orders')
         .update({ delivery_partner_id: user.id, status: 'picked_up' })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .eq('status', 'ready')
+        .is('delivery_partner_id', null)
+        .select()
+        .single(); // .single() will error if 0 rows are updated, e.g. in a race condition
 
       if (error) throw error;
+
       toast({
         title: "Order Accepted",
-        description: "You have accepted the order.",
+        description: "You have accepted the order. It's now in your deliveries.",
       });
       fetchOrders(); // Manually trigger a refresh
     } catch (error: any) {
       console.error("Error accepting order:", error);
+      let description = "Failed to accept the order.";
+      if (error.code === 'PGRST116') { // Specific error for .single() not finding a row
+        description = "This order is no longer available. It may have been accepted by another driver.";
+      } else if (error.message) {
+        description = error.message;
+      }
       toast({
         title: "Error Accepting Order",
-        description: error.message || "Failed to accept the order.",
+        description,
         variant: "destructive"
       });
     } finally {
@@ -147,12 +159,17 @@ export default function DeliveryDashboard() {
   };
 
   const completeOrder = async (orderId: string) => {
+    if (!user) return;
     setUpdatingOrder(orderId);
     try {
       const { error } = await supabase
         .from('orders')
         .update({ status: 'delivered' })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .eq('delivery_partner_id', user.id)
+        .eq('status', 'picked_up')
+        .select()
+        .single();
 
       if (error) throw error;
       toast({
@@ -164,7 +181,7 @@ export default function DeliveryDashboard() {
       console.error("Error completing order:", error);
       toast({
         title: "Error Completing Order",
-        description: error.message || "Failed to complete the order.",
+        description: error.message || "Failed to complete the order. Please try again.",
         variant: "destructive"
       });
     } finally {
