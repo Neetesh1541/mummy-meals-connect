@@ -28,14 +28,23 @@ serve(async (req) => {
         throw new Error("User ID not found in session metadata");
       }
 
+      const { shipping_details, customer_phone } = session.metadata!;
+      if (!shipping_details || !customer_phone) {
+          throw new Error("Shipping details not found in session metadata");
+      }
+
       // Use service role key to perform admin tasks
       const supabaseAdmin = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { autoRefreshToken: false, persistSession: false } }
       );
 
       const { error: rpcError } = await supabaseAdmin.rpc('create_orders_from_cart', {
         p_customer_id: userId,
+        p_shipping_details: JSON.parse(shipping_details),
+        p_customer_phone: customer_phone,
+        p_payment_method: 'stripe'
       });
 
       if (rpcError) throw rpcError;

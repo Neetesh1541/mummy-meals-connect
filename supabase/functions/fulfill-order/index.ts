@@ -35,7 +35,8 @@ serve(async (req) => {
       const { error } = await supabaseAdmin.rpc('create_orders_from_cart', {
           p_customer_id: user_id,
           p_shipping_details: JSON.parse(shipping_details),
-          p_customer_phone: customer_phone
+          p_customer_phone: customer_phone,
+          p_payment_method: 'stripe'
       });
 
       if (error) {
