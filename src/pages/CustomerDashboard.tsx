@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MenuBrowser } from "@/components/MenuBrowser";
 import { CartSidebar } from "@/components/CartSidebar";
-import { OrderTracking } from "@/components/OrderTracking";
+import { CustomerOrderTracking } from "@/components/customer/CustomerOrderTracking";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, MessageSquare, Home, Repeat } from "lucide-react";
@@ -56,7 +56,7 @@ export default function CustomerDashboard() {
                 </TabsContent>
 
                 <TabsContent value="orders" className="animate-fade-in">
-                  <OrderTracking />
+                  <CustomerOrderTracking />
                 </TabsContent>
                 
                 <TabsContent value="subscriptions" className="animate-fade-in">
