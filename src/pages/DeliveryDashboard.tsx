@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -95,25 +96,27 @@ export default function DeliveryDashboard() {
     if (user) {
       fetchOrders();
       const channel = supabase
-        .channel('delivery-dashboard-orders')
+        .channel('orders-delivery-realtime') // Use a new channel name to ensure a fresh subscription
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
           (payload) => {
-            console.log('DeliveryDashboard: Change received!', payload)
+            console.log('DeliveryDashboard: Change received on orders table!', payload);
+            console.log('Refetching all orders to update UI.');
             fetchOrders();
           }
         )
         .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
-            console.log(`Successfully subscribed to orders for Delivery Dashboard`);
+            console.log(`Successfully subscribed to 'orders' table for Delivery Dashboard`);
           }
            if (status === 'CHANNEL_ERROR') {
-            console.error(`Subscription error for Delivery Dashboard:`, err);
+            console.error(`Subscription error on 'orders' for Delivery Dashboard:`, err);
           }
         });
 
       return () => {
+        console.log("Cleaning up orders subscription for Delivery Dashboard.");
         supabase.removeChannel(channel);
       }
     }
