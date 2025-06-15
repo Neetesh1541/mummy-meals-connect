@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
@@ -32,7 +31,7 @@ export function ChatBox({ orderId }: ChatBoxProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     if (!orderId) return;
     try {
       const { data, error } = await supabase
@@ -45,7 +44,7 @@ export function ChatBox({ orderId }: ChatBoxProps) {
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
-  };
+  }, [orderId]);
 
   useEffect(() => {
     if (orderId) {
@@ -61,20 +60,25 @@ export function ChatBox({ orderId }: ChatBoxProps) {
             table: 'chat_messages',
             filter: `order_id=eq.${orderId}`,
           },
-          () => {
-            // A new message arrived. The simplest way to get the sender's name
-            // is to refetch all messages. For a high-traffic chat, a more
-            // optimized approach would be better.
+          (payload) => {
+            console.log('Realtime change received!', payload);
             fetchMessages();
           }
         )
-        .subscribe();
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`Successfully subscribed to chat for order ${orderId}`);
+          }
+           if (status === 'CHANNEL_ERROR') {
+            console.error(`Subscription error for order ${orderId}:`, err);
+          }
+        });
 
       return () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [orderId]);
+  }, [orderId, fetchMessages]);
 
   useEffect(() => {
     scrollToBottom();
