@@ -1,10 +1,9 @@
 
-import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MenuBrowser } from "@/components/MenuBrowser";
 import { CartSidebar } from "@/components/CartSidebar";
-import { CustomerOrderTracking } from "@/components/customer/CustomerOrderTracking";
+import { OrderTracking } from "@/components/OrderTracking";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, MessageSquare, Home, Repeat } from "lucide-react";
@@ -12,8 +11,6 @@ import { WavyBackground } from "@/components/WavyBackground";
 import { MySubscriptions } from "@/components/MySubscriptions";
 
 export default function CustomerDashboard() {
-  const [showCart, setShowCart] = useState(false);
-
   return (
     <div className="min-h-screen bg-background relative">
       <WavyBackground />
@@ -56,7 +53,7 @@ export default function CustomerDashboard() {
                 </TabsContent>
 
                 <TabsContent value="orders" className="animate-fade-in">
-                  <CustomerOrderTracking />
+                  <OrderTracking />
                 </TabsContent>
                 
                 <TabsContent value="subscriptions" className="animate-fade-in">
