@@ -251,11 +251,12 @@ export function OrderTracking() {
                           )}
                         </div>
                       </div>
-                       {order.status === 'picked_up' && order.delivery_partner_id && (
-                        <div className="mt-2 pl-6">
-                           <DeliveryMap deliveryPartnerId={order.delivery_partner_id} />
-                        </div>
-                      )}
+                    </div>
+                  )}
+
+                  {order.status === 'picked_up' && order.delivery_partner_id && (
+                    <div className="mt-2 pl-6">
+                       <DeliveryMap deliveryPartnerId={order.delivery_partner_id} />
                     </div>
                   )}
                 </div>
@@ -275,11 +276,6 @@ export function OrderTracking() {
                   <span>Out for delivery</span>
                   <span>Delivered</span>
                 </div>
-                {order.status === 'picked_up' && order.delivery_partner_id && !order.delivery_partner && (
-                  <div className="mt-4">
-                     <DeliveryMap deliveryPartnerId={order.delivery_partner_id} />
-                  </div>
-                )}
               </CardContent>
             </Card>
           ))}

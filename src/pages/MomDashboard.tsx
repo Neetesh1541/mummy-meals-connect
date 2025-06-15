@@ -1,3 +1,4 @@
+
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MenuManagement } from "@/components/MenuManagement";
@@ -293,7 +294,7 @@ export default function MomDashboard() {
                             )}
                           </div>
                           
-                          {order.status === 'picked_up' && order.delivery_partner_id && (
+                          {(order.status === 'picked_up' || order.status === 'ready') && order.delivery_partner_id && (
                             <div className="mt-4">
                               <h4 className="font-semibold flex items-center gap-2 mb-2"><MapPin className="h-4 w-4" /> Delivery Location</h4>
                               <DeliveryMap deliveryPartnerId={order.delivery_partner_id} />
