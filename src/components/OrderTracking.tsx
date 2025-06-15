@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,20 +48,7 @@ export function OrderTracking() {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      fetchOrders();
-      const channel = subscribeToOrderChanges();
-
-      return () => {
-        if (channel) {
-          supabase.removeChannel(channel);
-        }
-      };
-    }
-  }, [user]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!user) return;
     try {
       const { data, error } = await supabase
@@ -86,28 +74,40 @@ export function OrderTracking() {
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
-  };
+  }, [user]);
 
-  const subscribeToOrderChanges = () => {
-    if (!user) return null;
-    const channel = supabase
-      .channel('order-tracking')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-          filter: `customer_id=eq.${user?.id}`,
-        },
-        () => {
-          fetchOrders();
-        }
-      )
-      .subscribe();
+  useEffect(() => {
+    if (user) {
+      fetchOrders();
+      const channel = supabase
+        .channel(`order-tracking-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders',
+            filter: `customer_id=eq.${user.id}`,
+          },
+          () => {
+            console.log('OrderTracking: Change received on orders table!');
+            fetchOrders();
+          }
+        )
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`Successfully subscribed to order tracking for user ${user.id}`);
+          }
+          if (status === 'CHANNEL_ERROR') {
+            console.error(`Subscription error for order tracking for user ${user.id}:`, err);
+          }
+        });
 
-    return channel;
-  };
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user, fetchOrders]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

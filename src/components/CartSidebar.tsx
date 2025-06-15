@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -29,35 +30,7 @@ export function CartSidebar() {
   const [loading, setLoading] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchCartItems();
-
-      const channel = supabase
-        .channel(`cart-sidebar-realtime-${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'cart',
-            filter: `customer_id=eq.${user.id}`,
-          },
-          () => {
-            fetchCartItems();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    } else {
-      setCartItems([]);
-    }
-  }, [user]);
-
-  const fetchCartItems = async () => {
+  const fetchCartItems = useCallback(async () => {
     if (!user) return;
     try {
       const { data, error } = await supabase.rpc('get_cart_items', {
@@ -73,7 +46,43 @@ export function CartSidebar() {
     } catch (error) {
       console.error('Error fetching cart:', error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchCartItems();
+
+      const channel = supabase
+        .channel(`cart-sidebar-realtime-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'cart',
+            filter: `customer_id=eq.${user.id}`,
+          },
+          () => {
+            console.log('CartSidebar: change received on cart table!');
+            fetchCartItems();
+          }
+        )
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`Successfully subscribed to cart for user ${user.id}`);
+          }
+          if (status === 'CHANNEL_ERROR') {
+            console.error(`Subscription error for cart user ${user.id}:`, err);
+          }
+        });
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else {
+      setCartItems([]);
+    }
+  }, [user, fetchCartItems]);
 
   const updateQuantity = async (cartItemId: string, newQuantity: number) => {
     try {

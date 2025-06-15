@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +40,7 @@ export default function DeliveryDashboard() {
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
@@ -86,23 +86,35 @@ export default function DeliveryDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast]);
 
-  const subscribeToOrderChanges = () => {
-    if (!user) return;
+  useEffect(() => {
+    if (user) {
+      fetchOrders();
+      const channel = supabase
+        .channel('delivery-dashboard-orders')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          (payload) => {
+            console.log('DeliveryDashboard: Change received!', payload)
+            fetchOrders();
+          }
+        )
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`Successfully subscribed to orders for Delivery Dashboard`);
+          }
+           if (status === 'CHANNEL_ERROR') {
+            console.error(`Subscription error for Delivery Dashboard:`, err);
+          }
+        });
 
-    supabase
-      .channel('public:orders')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          console.log('Change received!', payload)
-          fetchOrders();
-        }
-      )
-      .subscribe()
-  };
+      return () => {
+        supabase.removeChannel(channel);
+      }
+    }
+  }, [user, fetchOrders]);
 
   const acceptOrder = async (orderId: string) => {
     try {
@@ -153,13 +165,6 @@ export default function DeliveryDashboard() {
     const { line1, city, state, postal_code } = address;
     return [line1, city, state, postal_code].filter(Boolean).join(', ');
   };
-
-  useEffect(() => {
-    if (user) {
-      fetchOrders();
-      subscribeToOrderChanges();
-    }
-  }, [user]);
 
   if (loading) {
     return <div className="text-center py-8">Loading deliveries...</div>;

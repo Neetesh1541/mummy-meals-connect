@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,42 +74,7 @@ export function MenuBrowser() {
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchMenuItemsAndRatings();
-      fetchCartItems();
-
-      const channel = supabase
-        .channel(`customer-dashboard-browser-${user.id}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "menu" },
-          () => fetchMenuItemsAndRatings()
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "feedback" },
-          () => fetchMenuItemsAndRatings()
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "cart",
-            filter: `customer_id=eq.${user.id}`,
-          },
-          () => fetchCartItems()
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user]);
-
-  const fetchMenuItemsAndRatings = async () => {
+  const fetchMenuItemsAndRatings = useCallback(async (isInitialLoad: boolean) => {
     setLoading(true);
     try {
       const menuPromise = supabase
@@ -136,8 +101,7 @@ export function MenuBrowser() {
         if (prices.length > 0) {
           const newMaxPrice = Math.ceil(Math.max(...prices));
           setMaxPrice(newMaxPrice);
-          // Only set price range if it's the initial load
-          if (loading) {
+          if (isInitialLoad) {
             setPriceRange([0, newMaxPrice]);
           }
         }
@@ -152,9 +116,9 @@ export function MenuBrowser() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const fetchCartItems = async () => {
+  const fetchCartItems = useCallback(async () => {
     if (!user) return;
     try {
       const { data, error } = await supabase.rpc('get_user_cart', {
@@ -170,7 +134,49 @@ export function MenuBrowser() {
     } catch (error) {
       console.error('Error fetching cart items:', error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchMenuItemsAndRatings(true);
+      fetchCartItems();
+
+      const channel = supabase
+        .channel(`customer-dashboard-browser-${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "menu" },
+          () => fetchMenuItemsAndRatings(false)
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "feedback" },
+          () => fetchMenuItemsAndRatings(false)
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "cart",
+            filter: `customer_id=eq.${user.id}`,
+          },
+          () => fetchCartItems()
+        )
+        .subscribe((status, err) => {
+            if (status === 'SUBSCRIBED') {
+                console.log(`Successfully subscribed to menu/cart updates for user ${user.id}`);
+            }
+            if (status === 'CHANNEL_ERROR') {
+                console.error(`Subscription error for menu/cart for user ${user.id}:`, err);
+            }
+        });
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user, fetchCartItems, fetchMenuItemsAndRatings]);
 
   const addToCart = async (menuItem: MenuItem) => {
     if (!user) return;
