@@ -4,13 +4,15 @@ import { MenuManagement } from "@/components/MenuManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChefHat, Users, DollarSign, Clock, Phone, MapPin, Truck, CreditCard, Wallet, MessageSquare } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DeliveryMap } from "@/components/DeliveryMap";
 import { ChatBox } from "@/components/ChatBox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 interface Order {
   id: string;
@@ -46,6 +48,7 @@ const getStatusColorForMom = (status: string) => {
 
 export default function MomDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -60,17 +63,38 @@ export default function MomDashboard() {
     if (user) {
       fetchOrders();
       fetchStats();
-      const channel = subscribeToOrderChanges();
+      const channel = supabase
+        .channel(`mom-dashboard-orders-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders',
+            filter: `mom_id=eq.${user.id}`,
+          },
+          () => {
+            console.log('MomDashboard: Change received on orders table!');
+            fetchOrders();
+            fetchStats();
+          }
+        )
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`Successfully subscribed to mom-dashboard for user ${user.id}`);
+          }
+          if (status === 'CHANNEL_ERROR') {
+            console.error(`Subscription error for mom-dashboard user ${user.id}:`, err);
+          }
+        });
 
       return () => {
-        if (channel) {
-          supabase.removeChannel(channel);
-        }
+        supabase.removeChannel(channel);
       };
     }
   }, [user]);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!user) return;
     try {
       const { data, error } = await supabase
@@ -86,7 +110,7 @@ export default function MomDashboard() {
           customer:users!orders_customer_id_fkey(full_name, phone, address),
           delivery_partner:users!orders_delivery_partner_id_fkey(full_name, phone)
         `)
-        .eq('mom_id', user?.id)
+        .eq('mom_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -94,9 +118,9 @@ export default function MomDashboard() {
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
-  };
+  }, [user]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     if (!user) return;
     try {
       const [ordersResponse, menuResponse] = await Promise.all([
@@ -125,30 +149,7 @@ export default function MomDashboard() {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
-
-  const subscribeToOrderChanges = () => {
-    if (!user) return null;
-    
-    const channel = supabase
-      .channel('mom-orders')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-          filter: `mom_id=eq.${user?.id}`,
-        },
-        () => {
-          fetchOrders();
-          fetchStats();
-        }
-      )
-      .subscribe();
-
-    return channel;
-  };
+  }, [user]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -158,8 +159,17 @@ export default function MomDashboard() {
         .eq('id', orderId);
       
       if (error) throw error;
-    } catch (error) {
+      toast({
+        title: "Status Updated",
+        description: `Order status successfully changed to ${newStatus}.`,
+      });
+    } catch (error: any) {
       console.error('Error updating order status:', error);
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -167,6 +177,23 @@ export default function MomDashboard() {
     if (!address) return 'Not provided';
     const { line1, city, state, postal_code } = address;
     return [line1, city, state, postal_code].filter(Boolean).join(', ');
+  };
+
+  const renderStatusControl = (order: Order) => {
+    switch (order.status) {
+      case 'placed':
+        return <Button size="sm" className="w-full mt-2" onClick={() => updateOrderStatus(order.id, 'preparing')}>Start Preparing</Button>;
+      case 'preparing':
+        return <Button size="sm" className="w-full mt-2" onClick={() => updateOrderStatus(order.id, 'ready')}>Mark as Ready for Pickup</Button>;
+      default:
+        return (
+            <div className="text-right mt-2">
+                <Badge variant="secondary" className="capitalize">
+                    {order.status.replace('_', ' ')}
+                </Badge>
+            </div>
+        );
+    }
   };
 
   return (
@@ -268,7 +295,7 @@ export default function MomDashboard() {
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {orders.map((order) => (
                       <Card key={order.id} className="hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
-                        <CardContent className="p-6 flex-grow">
+                        <CardContent className="p-6 flex-grow flex flex-col">
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h3 className="text-lg font-semibold">{order.menu.title}</h3>
@@ -289,23 +316,12 @@ export default function MomDashboard() {
                                 )}
                               </div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right flex-shrink-0">
                               <p className="text-2xl font-bold text-green-600">₹{order.total_amount}</p>
-                              <select
-                                value={order.status}
-                                onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                                className="mt-2 p-2 border rounded-md bg-background focus:ring-2 focus:ring-ring"
-                              >
-                                <option value="placed">Placed</option>
-                                <option value="preparing">Preparing</option>
-                                <option value="ready">Ready</option>
-                                <option value="picked_up" disabled>Picked Up</option>
-                                <option value="delivered" disabled>Delivered</option>
-                              </select>
                             </div>
                           </div>
 
-                          <div className="border-t pt-4 mt-4 space-y-4 text-sm">
+                          <div className="border-t pt-4 mt-4 space-y-4 text-sm flex-grow">
                              <div>
                                 <h4 className="font-semibold flex items-center gap-2 mb-2"><Users className="h-4 w-4" /> Customer Details</h4>
                                 <div className="pl-6 space-y-1">
@@ -344,6 +360,10 @@ export default function MomDashboard() {
                               <ChatBox orderId={order.id} />
                             </CollapsibleContent>
                           </Collapsible>
+
+                          <div className="mt-auto pt-4">
+                             {renderStatusControl(order)}
+                          </div>
 
                         </CardContent>
                         <div className={`h-1.5 w-full ${getStatusColorForMom(order.status)}`}></div>
