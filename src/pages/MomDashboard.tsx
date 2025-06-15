@@ -12,7 +12,7 @@ import { DeliveryMap } from "@/components/DeliveryMap";
 import { ChatBox } from "@/components/ChatBox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 
 interface Order {
