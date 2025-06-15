@@ -98,7 +98,7 @@ export default function DeliveryDashboard() {
       fetchOrders();
       // All delivery partners subscribe to the same channel to get updates for all orders.
       const channel = supabase
-        .channel('public:orders')
+        .channel('available-orders-channel') // Using a custom channel name for robustness
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
@@ -110,10 +110,10 @@ export default function DeliveryDashboard() {
         )
         .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
-            console.log(`Successfully subscribed to 'public:orders' for Delivery Dashboard`);
+            console.log(`Successfully subscribed to 'available-orders-channel' for Delivery Dashboard`);
           }
            if (status === 'CHANNEL_ERROR') {
-            console.error(`Subscription error on 'public:orders' for Delivery Dashboard:`, err);
+            console.error(`Subscription error on 'available-orders-channel' for Delivery Dashboard:`, err);
             toast({
               title: "Connection Error",
               description: "Could not connect to real-time updates. Please refresh the page.",
@@ -123,7 +123,7 @@ export default function DeliveryDashboard() {
         });
 
       return () => {
-        console.log(`Cleaning up public:orders subscription for Delivery Dashboard.`);
+        console.log(`Cleaning up available-orders-channel subscription for Delivery Dashboard.`);
         supabase.removeChannel(channel);
       }
     }
