@@ -111,19 +111,20 @@ export default function MomDashboard() {
       ]);
       
       const orders = ordersResponse.data || [];
+      const completedOrders = orders.filter(o => o.status === 'delivered');
       
-      const onlineRevenue = orders
+      const onlineRevenue = completedOrders
         .filter(o => o.payment_method === 'stripe')
         .reduce((sum, order) => sum + (order.total_amount || 0), 0);
 
-      const codRevenue = orders
+      const codRevenue = completedOrders
         .filter(o => o.payment_method === 'cod')
         .reduce((sum, order) => sum + (order.total_amount || 0), 0);
 
       setStats({
         totalOrders: orders.length,
         activeOrders: orders.filter(order => ['placed', 'preparing', 'ready'].includes(order.status ?? '')).length,
-        totalRevenue: orders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
+        totalRevenue: completedOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
         onlineRevenue,
         codRevenue,
         menuItems: menuResponse.count || 0,
