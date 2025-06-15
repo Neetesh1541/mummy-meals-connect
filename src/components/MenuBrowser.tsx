@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Plus, Minus, Camera } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Camera, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface MenuItem {
   id: string;
@@ -32,6 +33,7 @@ export function MenuBrowser() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -177,6 +179,10 @@ export function MenuBrowser() {
     return cartItems.find(item => item.menu_id === menuId);
   };
 
+  const filteredMenuItems = menuItems.filter(item =>
+    item.title?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) {
     return <div className="text-center py-8">Loading delicious meals...</div>;
   }
@@ -191,76 +197,97 @@ export function MenuBrowser() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {menuItems.map((item) => {
-          const cartQuantity = getCartQuantity(item.id);
-          const cartItem = getCartItem(item.id);
-          
-          return (
-            <Card key={item.id} className="hover:shadow-lg transition-all duration-300 hover:scale-105 animate-fade-in flex flex-col overflow-hidden">
-              {item.image_url ? (
-                <img src={item.image_url} alt={item.title || 'Menu item'} className="w-full h-48 object-cover" />
-              ) : (
-                <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                  <Camera className="h-12 w-12 text-gray-400" />
-                </div>
-              )}
-              <CardHeader className="flex-grow">
-                <CardTitle className="flex justify-between items-start">
-                  <span>{item.title}</span>
-                  <Badge variant="secondary">
-                    by {item.users?.full_name || 'Mom'}
-                  </Badge>
-                </CardTitle>
-                <CardDescription>{item.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-2xl font-bold text-green-600">₹{item.price}</span>
-                  <Badge variant="default">Available</Badge>
-                </div>
-                
-                {cartQuantity > 0 ? (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => cartItem && updateCartQuantity(cartItem.id, cartQuantity - 1)}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="font-semibold">{cartQuantity}</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => cartItem && updateCartQuantity(cartItem.id, cartQuantity + 1)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <span className="text-sm text-gray-600">In Cart</span>
-                  </div>
-                ) : (
-                  <Button
-                    onClick={() => addToCart(item)}
-                    className="w-full bg-gradient-to-r from-warm-orange-500 to-warm-orange-600 hover:from-warm-orange-600 hover:to-warm-orange-700"
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Add to Cart
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Search for delicious meals..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 w-full"
+        />
       </div>
 
-      {menuItems.length === 0 && (
+      {filteredMenuItems.length > 0 && (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredMenuItems.map((item) => {
+            const cartQuantity = getCartQuantity(item.id);
+            const cartItem = getCartItem(item.id);
+            
+            return (
+              <Card key={item.id} className="hover:shadow-lg transition-all duration-300 hover:scale-105 animate-fade-in flex flex-col overflow-hidden">
+                {item.image_url ? (
+                  <img src={item.image_url} alt={item.title || 'Menu item'} className="w-full h-48 object-cover" />
+                ) : (
+                  <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                    <Camera className="h-12 w-12 text-gray-400" />
+                  </div>
+                )}
+                <CardHeader className="flex-grow">
+                  <CardTitle className="flex justify-between items-start">
+                    <span>{item.title}</span>
+                    <Badge variant="secondary">
+                      by {item.users?.full_name || 'Mom'}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>{item.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-2xl font-bold text-green-600">₹{item.price}</span>
+                    <Badge variant="default">Available</Badge>
+                  </div>
+                  
+                  {cartQuantity > 0 ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => cartItem && updateCartQuantity(cartItem.id, cartQuantity - 1)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="font-semibold">{cartQuantity}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => cartItem && updateCartQuantity(cartItem.id, cartQuantity + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <span className="text-sm text-gray-600">In Cart</span>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => addToCart(item)}
+                      className="w-full bg-gradient-to-r from-warm-orange-500 to-warm-orange-600 hover:from-warm-orange-600 hover:to-warm-orange-700"
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Add to Cart
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {!loading && menuItems.length === 0 && (
         <div className="text-center py-12">
           <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold mb-2">No meals available</h3>
           <p className="text-gray-600">Check back soon for delicious home-cooked meals!</p>
+        </div>
+      )}
+      
+      {!loading && menuItems.length > 0 && filteredMenuItems.length === 0 && (
+         <div className="text-center py-12">
+          <Search className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No meals found</h3>
+          <p className="text-gray-600">We couldn't find any meals matching your search. Try another keyword!</p>
         </div>
       )}
     </div>
