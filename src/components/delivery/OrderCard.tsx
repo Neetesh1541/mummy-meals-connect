@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,6 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChatBox } from "@/components/ChatBox";
 import { User, Phone, MapPin, MessageSquare } from "lucide-react";
 import { Order } from "@/types/order";
+import { getStatusClassNames } from "@/lib/status-colors";
 
 interface OrderCardProps {
   order: Order;
@@ -27,7 +29,7 @@ export function OrderCard({ order, isMyOrder, onAccept, onComplete, updatingOrde
         {isMyOrder ? (
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg">Order #{order.id.substring(0, 8)}</CardTitle>
-            <Badge variant={order.status === 'picked_up' ? 'secondary' : 'default'}>
+            <Badge className={`capitalize ${getStatusClassNames(order.status).badge}`}>
               {order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')}
             </Badge>
           </div>

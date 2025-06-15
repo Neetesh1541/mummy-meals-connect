@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChatBox } from "./ChatBox";
 import { Order } from "@/types/order";
 import { useToast } from "@/hooks/use-toast";
+import { getStatusClassNames } from "@/lib/status-colors";
 
 export function OrderTracking() {
   const { user } = useAuth();
@@ -97,36 +98,20 @@ export function OrderTracking() {
   }, [user, fetchOrders, toast]);
 
   const getStatusIcon = (status: string) => {
+    const iconColor = getStatusClassNames(status).text;
     switch (status) {
       case 'placed':
-        return <Clock className="h-4 w-4" />;
+        return <Clock className={`h-4 w-4 ${iconColor}`} />;
       case 'preparing':
-        return <Clock className="h-4 w-4 text-orange-500" />;
+        return <Clock className={`h-4 w-4 ${iconColor}`} />;
       case 'ready':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className={`h-4 w-4 ${iconColor}`} />;
       case 'picked_up':
-        return <Truck className="h-4 w-4 text-blue-500" />;
+        return <Truck className={`h-4 w-4 ${iconColor}`} />;
       case 'delivered':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className={`h-4 w-4 ${iconColor}`} />;
       default:
         return <Clock className="h-4 w-4" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'placed':
-        return 'default';
-      case 'preparing':
-        return 'secondary';
-      case 'ready':
-        return 'default';
-      case 'picked_up':
-        return 'secondary';
-      case 'delivered':
-        return 'default';
-      default:
-        return 'default';
     }
   };
 
@@ -180,7 +165,7 @@ export function OrderTracking() {
                     </CardDescription>
                   </div>
                   <div className="flex flex-col items-end gap-2 text-right">
-                    <Badge variant={getStatusColor(order.status)} className="flex items-center gap-1">
+                    <Badge className={`flex items-center gap-1 capitalize ${getStatusClassNames(order.status).badge}`}>
                       {getStatusIcon(order.status)}
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')}
                     </Badge>

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types/order";
+import { getStatusClassNames } from "@/lib/status-colors";
 
 const getStatusColorForMom = (status: string) => {
   switch (status) {
@@ -176,7 +177,7 @@ export default function MomDashboard() {
       default:
         return (
             <div className="text-right mt-2">
-                <Badge variant="secondary" className="capitalize">
+                <Badge className={`capitalize ${getStatusClassNames(order.status).badge}`}>
                     {order.status.replace('_', ' ')}
                 </Badge>
             </div>
@@ -357,7 +358,7 @@ export default function MomDashboard() {
                           </div>
 
                         </CardContent>
-                        <div className={`h-1.5 w-full ${getStatusColorForMom(order.status)}`}></div>
+                        <div className={`h-1.5 w-full ${getStatusClassNames(order.status).bg}`}></div>
                       </Card>
                     ))}
                   </div>
