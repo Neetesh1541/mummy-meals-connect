@@ -1,213 +1,149 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Truck, MapPin, Clock, DollarSign, Phone, User, Wallet, CreditCard } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useGeolocation } from "@/hooks/useGeolocation";
+import { Clock, User, Phone, MapPin, Truck } from "lucide-react";
+import { WavyBackground } from "@/components/WavyBackground";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChatBox } from "@/components/ChatBox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { MessageSquare } from "lucide-react";
 
-interface OrderInfo {
+interface Order {
   id: string;
   status: string;
-  total_amount: number;
-  delivery_fee: number | null;
-  created_at: string;
-  payment_method: string;
   menu: {
     title: string;
   };
+  quantity: number;
+  shipping_details: any;
   customer: {
     full_name: string;
-    phone?: string;
-    address?: any;
+    phone: string;
   };
   mom: {
     full_name: string;
-    phone?: string;
-    address?: any;
+    phone: string;
+    address: any;
   };
 }
 
 export default function DeliveryDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [availableOrders, setAvailableOrders] = useState<OrderInfo[]>([]);
-  const [myOrders, setMyOrders] = useState<OrderInfo[]>([]);
-  const { position, error: geoError, startWatching, stopWatching } = useGeolocation();
-  const [isTracking, setIsTracking] = useState(false);
-
-  const [stats, setStats] = useState({
-    totalDeliveries: 0,
-    activeDeliveries: 0,
-    todayEarnings: 0,
-    rating: 4.8,
-  });
-
-  useEffect(() => {
-    if (user) {
-      fetchOrders();
-      const channel = subscribeToOrderChanges();
-      return () => {
-        if (channel) {
-          supabase.removeChannel(channel);
-        }
-      }
-    }
-  }, [user]);
-
-  useEffect(() => {
-    const activeDeliveries = myOrders.some(o => o.status === 'picked_up');
-    if (activeDeliveries && !isTracking) {
-      startWatching();
-      setIsTracking(true);
-    } else if (!activeDeliveries && isTracking) {
-      stopWatching();
-      setIsTracking(false);
-    }
-  }, [myOrders, isTracking, startWatching, stopWatching]);
-
-  useEffect(() => {
-    if (position && user && isTracking) {
-      const updateLocation = async () => {
-        await supabase
-          .from('delivery_partner_locations')
-          .upsert({
-            partner_id: user.id,
-            latitude: position.latitude,
-            longitude: position.longitude,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'partner_id' });
-      };
-      updateLocation();
-    }
-  }, [position, user, isTracking]);
+  const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
+  const [myOrders, setMyOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchOrders = async () => {
     if (!user) return;
+    setLoading(true);
     try {
-      // Fetch available orders (ready status, no delivery partner assigned)
       const { data: available, error: availableError } = await supabase
         .from('orders')
         .select(`
           id,
           status,
-          total_amount,
-          delivery_fee,
-          created_at,
-          payment_method,
-          menu!orders_menu_id_fkey(title),
-          customer:users!orders_customer_id_fkey(full_name, phone, address),
-          mom:users!orders_mom_id_fkey(full_name, phone, address)
+          menu (title),
+          quantity,
+          shipping_details,
+          customer:users!orders_customer_id_fkey (full_name, phone),
+          mom:users!orders_mom_id_fkey (full_name, phone, address)
         `)
         .eq('status', 'ready')
         .is('delivery_partner_id', null);
-      
+
       if (availableError) throw availableError;
       setAvailableOrders(available || []);
 
-      // Fetch my assigned orders
-      const { data: assigned, error: assignedError } = await supabase
+      const { data: mine, error: mineError } = await supabase
         .from('orders')
         .select(`
           id,
           status,
-          total_amount,
-          delivery_fee,
-          created_at,
-          payment_method,
-          menu!orders_menu_id_fkey(title),
-          customer:users!orders_customer_id_fkey(full_name, phone, address),
-          mom:users!orders_mom_id_fkey(full_name, phone, address)
+          menu (title),
+          quantity,
+          shipping_details,
+          customer:users!orders_customer_id_fkey (full_name, phone),
+          mom:users!orders_mom_id_fkey (full_name, phone, address)
         `)
-        .eq('delivery_partner_id', user?.id)
-        .in('status', ['picked_up', 'delivered']);
-      
-      if (assignedError) throw assignedError;
-      setMyOrders(assigned || []);
+        .eq('delivery_partner_id', user.id);
 
-      // Update stats
-      const deliveredOrders = (assigned || []).filter(o => o.status === 'delivered');
-      const totalEarnings = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee || 0), 0);
-      
-      setStats(prev => ({
-        ...prev,
-        totalDeliveries: deliveredOrders.length,
-        activeDeliveries: (assigned || []).filter(o => o.status === 'picked_up').length,
-        todayEarnings: totalEarnings,
-      }));
-    } catch (error) {
-      console.error('Error fetching orders:', error);
+      if (mineError) throw mineError;
+      setMyOrders(mine || []);
+    } catch (error: any) {
+      console.error("Error fetching orders:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch orders.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   const subscribeToOrderChanges = () => {
-    const channel = supabase
-      .channel('delivery-orders')
+    if (!user) return;
+
+    supabase
+      .channel('public:orders')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-        },
-        () => {
+        { event: '*', schema: 'public', table: 'orders' },
+        (payload) => {
+          console.log('Change received!', payload)
           fetchOrders();
         }
       )
-      .subscribe();
-
-    return channel;
+      .subscribe()
   };
 
   const acceptOrder = async (orderId: string) => {
     try {
       const { error } = await supabase
         .from('orders')
-        .update({
-          delivery_partner_id: user?.id,
-          status: 'picked_up'
-        })
+        .update({ delivery_partner_id: user.id, status: 'picked_up' })
         .eq('id', orderId);
-      
+
       if (error) throw error;
-      
       toast({
-        title: "Order accepted!",
-        description: "You've been assigned this delivery",
+        title: "Order Accepted",
+        description: "You have accepted the order.",
       });
-    } catch (error) {
-      console.error('Error accepting order:', error);
+    } catch (error: any) {
+      console.error("Error accepting order:", error);
       toast({
         title: "Error",
-        description: "Failed to accept order",
-        variant: "destructive",
+        description: "Failed to accept the order.",
+        variant: "destructive"
       });
     }
   };
 
-  const completeDelivery = async (orderId: string) => {
+  const completeOrder = async (orderId: string) => {
     try {
       const { error } = await supabase
         .from('orders')
         .update({ status: 'delivered' })
         .eq('id', orderId);
-      
+
       if (error) throw error;
-      
       toast({
-        title: "Delivery completed!",
-        description: "Great job! The order has been delivered",
+        title: "Order Completed",
+        description: "You have completed the order.",
       });
-    } catch (error) {
-      console.error('Error completing delivery:', error);
+    } catch (error: any) {
+      console.error("Error completing order:", error);
       toast({
         title: "Error",
-        description: "Failed to complete delivery",
-        variant: "destructive",
+        description: "Failed to complete the order.",
+        variant: "destructive"
       });
     }
   };
@@ -218,226 +154,186 @@ export default function DeliveryDashboard() {
     return [line1, city, state, postal_code].filter(Boolean).join(', ');
   };
 
+  useEffect(() => {
+    if (user) {
+      fetchOrders();
+      subscribeToOrderChanges();
+    }
+  }, [user]);
+
+  if (loading) {
+    return <div className="text-center py-8">Loading deliveries...</div>;
+  }
+
   return (
-    <div className="min-h-screen bg-background relative animated-soft-gradient">
+    <div className="min-h-screen bg-background relative">
+      <WavyBackground />
       <Header />
       <main className="container py-8 relative z-10">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div className="text-center animate-fade-in">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-warm-orange-500 to-pastel-green-500 bg-clip-text text-transparent">
-              Delivery Partner Dashboard
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-warm-orange-500 to-pastel-green-500 bg-clip-text text-transparent animate-fade-in">
+              Deliver and Earn!
             </h1>
-            <p className="text-muted-foreground mt-2">
-              Delivering happiness, one meal at a time
+            <p className="text-muted-foreground mt-2 animate-fade-in">
+              Accept deliveries and make customers happy
             </p>
           </div>
 
-          <div className="grid md:grid-cols-4 gap-6 animate-fade-in">
-            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-blue-400">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Deliveries</CardTitle>
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Truck className="h-4 w-4 text-blue-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalDeliveries}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-orange-400">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Deliveries</CardTitle>
-                 <div className="p-2 bg-orange-100 rounded-full">
-                  <Clock className="h-4 w-4 text-orange-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.activeDeliveries}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-green-400">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-                <div className="p-2 bg-green-100 rounded-full">
-                  <DollarSign className="h-4 w-4 text-green-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">₹{stats.todayEarnings}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-purple-400">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Rating</CardTitle>
-                <div className="p-2 bg-purple-100 rounded-full">
-                  <MapPin className="h-4 w-4 text-purple-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.rating}</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            <Card className="animate-fade-in hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <CardTitle>Available Deliveries</CardTitle>
-                <CardDescription>Orders ready for pickup</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {availableOrders.length === 0 ? (
-                  <div className="text-center py-8">
+          <Tabs defaultValue="available" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="available">Available Deliveries</TabsTrigger>
+              <TabsTrigger value="mine">My Deliveries</TabsTrigger>
+            </TabsList>
+            <TabsContent value="available" className="animate-fade-in">
+              <h2 className="text-2xl font-bold mb-4">Available Deliveries</h2>
+              {availableOrders.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
                     <Truck className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No deliveries available</h3>
-                    <p className="text-gray-600">Check back soon for new opportunities</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {availableOrders.map((order) => (
-                      <div key={order.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-semibold">{order.menu.title}</h4>
-                            <p className="text-sm text-gray-500">
-                                {new Date(order.created_at).toLocaleString()}
-                            </p>
-                             <div className="flex items-center gap-2 mt-2">
-                                {order.payment_method === 'cod' ? (
-                                  <>
-                                    <Wallet className="h-4 w-4 text-blue-500" />
-                                    <span className="text-sm text-blue-500 font-medium">Cash on Delivery</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <CreditCard className="h-4 w-4 text-green-500" />
-                                    <span className="text-sm text-green-500 font-medium">Paid Online</span>
-                                  </>
-                                )}
-                              </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-green-600">₹{order.total_amount}</p>
-                            <Badge variant="default">Ready</Badge>
-                          </div>
+                    <p className="text-gray-600">Check back later for new opportunities!</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-6">
+                  {availableOrders.map((order) => (
+                    <Card key={order.id} className="animate-fade-in">
+                      <CardHeader>
+                        <CardTitle className="text-lg">Order #{order.id.substring(0, 8)}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex justify-between items-center text-sm">
+                          <div className="font-semibold">{order.menu.title}</div>
+                          <div>Qty: {order.quantity}</div>
                         </div>
-
-                        <div className="border-t pt-2 mt-2 space-y-3 text-sm">
-                          <div>
-                            <h5 className="font-semibold mb-1">Pickup From (Chef)</h5>
-                            <div className="flex items-center gap-2 text-gray-600"><User className="h-4 w-4" /> {order.mom.full_name}</div>
-                            <div className="flex items-center gap-2 text-gray-600 mt-1"><Phone className="h-4 w-4" /> {order.mom.phone || 'Not provided'}</div>
-                            <div className="flex items-start gap-2 text-gray-600 mt-1"><MapPin className="h-4 w-4 mt-1" /> <span>{formatAddress(order.mom.address)}</span></div>
-                          </div>
-                           <div className="border-t"></div>
-                          <div>
-                            <h5 className="font-semibold mb-1">Deliver To (Customer)</h5>
-                            <div className="flex items-center gap-2 text-gray-600"><User className="h-4 w-4" /> {order.customer.full_name}</div>
-                            <div className="flex items-center gap-2 text-gray-600 mt-1"><Phone className="h-4 w-4" /> {order.customer.phone || 'Not provided'}</div>
-                             <div className="flex items-start gap-2 text-gray-600 mt-1"><MapPin className="h-4 w-4 mt-1" /> <span>{formatAddress(order.customer.address)}</span></div>
-                          </div>
+                        <div className="text-xs text-gray-500 mb-2">
+                          To be delivered to {order.shipping_details.name}
                         </div>
-
-                        <Button
-                          onClick={() => acceptOrder(order.id)}
-                          className="w-full mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-                        >
-                          Accept Delivery
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="animate-fade-in hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <CardTitle>My Deliveries</CardTitle>
-                <CardDescription>Your assigned deliveries</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {myOrders.length === 0 ? (
-                  <div className="text-center py-8">
-                    <MapPin className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No active deliveries</h3>
-                    <p className="text-gray-600">Accept orders from the available list</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {myOrders.map((order) => (
-                      <div key={order.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-semibold">{order.menu.title}</h4>
-                            <p className="text-sm text-gray-500">
-                              {new Date(order.created_at).toLocaleDateString()}
-                            </p>
-                            <div className="flex items-center gap-2 mt-2">
-                                {order.payment_method === 'cod' ? (
-                                    <>
-                                    <Wallet className="h-4 w-4 text-blue-500" />
-                                    <span className="text-sm text-blue-500 font-medium">Collect: ₹{order.total_amount}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                    <CreditCard className="h-4 w-4 text-green-500" />
-                                    <span className="text-sm text-green-500 font-medium">Paid Online</span>
-                                    </>
-                                )}
+                        <div className="border-t pt-2 mt-2 space-y-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-500" />
+                              <span className="font-semibold">Customer: {order.customer.full_name}</span>
+                              <a href={`tel:${order.customer.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
+                                <Phone className="h-3 w-3" />
+                                <span>Call</span>
+                              </a>
+                            </div>
+                            <div className="flex items-start gap-2 pl-6">
+                              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
+                              <span className="text-xs">{formatAddress(order.shipping_details.address)}</span>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-green-600">₹{order.total_amount}</p>
-                            <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
-                              {order.status === 'picked_up' ? 'Out for Delivery' : 'Delivered'}
-                            </Badge>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-500" />
+                              <span className="font-semibold">Chef: {order.mom.full_name}</span>
+                              <a href={`tel:${order.mom.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
+                                <Phone className="h-3 w-3" />
+                                <span>Call</span>
+                              </a>
+                            </div>
+                            <div className="flex items-start gap-2 pl-6">
+                              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
+                              <span className="text-xs">{formatAddress(order.mom.address)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button className="w-full mt-4" onClick={() => acceptOrder(order.id)}>
+                          Accept Delivery
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="mine" className="animate-fade-in">
+              <h2 className="text-2xl font-bold mb-4">My Deliveries</h2>
+              {myOrders.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <Truck className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No deliveries accepted yet</h3>
+                    <p className="text-gray-600">Accept an order to see it here!</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-6">
+                  {myOrders.map((order) => (
+                    <Card key={order.id} className="animate-fade-in">
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-lg">Order #{order.id.substring(0, 8)}</CardTitle>
+                          <Badge variant={order.status === 'picked_up' ? 'secondary' : 'default'}>
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex justify-between items-center text-sm">
+                          <div className="font-semibold">{order.menu.title}</div>
+                          <div>Qty: {order.quantity}</div>
+                        </div>
+                        <div className="text-xs text-gray-500 mb-2">
+                          To be delivered to {order.shipping_details.name}
+                        </div>
+                        <div className="border-t pt-2 mt-2 space-y-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-500" />
+                              <span className="font-semibold">Customer: {order.customer.full_name}</span>
+                              <a href={`tel:${order.customer.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
+                                <Phone className="h-3 w-3" />
+                                <span>Call</span>
+                              </a>
+                            </div>
+                            <div className="flex items-start gap-2 pl-6">
+                              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
+                              <span className="text-xs">{formatAddress(order.shipping_details.address)}</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-500" />
+                              <span className="font-semibold">Chef: {order.mom.full_name}</span>
+                              <a href={`tel:${order.mom.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
+                                <Phone className="h-3 w-3" />
+                                <span>Call</span>
+                              </a>
+                            </div>
+                            <div className="flex items-start gap-2 pl-6">
+                              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
+                              <span className="text-xs">{formatAddress(order.mom.address)}</span>
+                            </div>
                           </div>
                         </div>
 
-                         <div className="border-t pt-2 mt-2 space-y-3 text-sm">
-                          <div>
-                            <h5 className="font-semibold mb-1">Pickup From (Chef)</h5>
-                            <div className="flex items-center gap-2 text-gray-600"><User className="h-4 w-4" /> {order.mom.full_name}</div>
-                            <div className="flex items-center gap-2 text-gray-600 mt-1"><Phone className="h-4 w-4" /> {order.mom.phone || 'Not provided'}</div>
-                            <div className="flex items-start gap-2 text-gray-600 mt-1"><MapPin className="h-4 w-4 mt-1" /> <span>{formatAddress(order.mom.address)}</span></div>
-                          </div>
-                           <div className="border-t"></div>
-                          <div>
-                            <h5 className="font-semibold mb-1">Deliver To (Customer)</h5>
-                            <div className="flex items-center gap-2 text-gray-600"><User className="h-4 w-4" /> {order.customer.full_name}</div>
-                            <div className="flex items-center gap-2 text-gray-600 mt-1"><Phone className="h-4 w-4" /> {order.customer.phone || 'Not provided'}</div>
-                             <div className="flex items-start gap-2 text-gray-600 mt-1"><MapPin className="h-4 w-4 mt-1" /> <span>{formatAddress(order.customer.address)}</span></div>
-                          </div>
-                        </div>
+                        <Collapsible className="mt-4">
+                          <CollapsibleTrigger asChild>
+                            <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                              <MessageSquare className="h-4 w-4" />
+                              <span>Chat about this order</span>
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="mt-4">
+                            <ChatBox orderId={order.id} />
+                          </CollapsibleContent>
+                        </Collapsible>
 
                         {order.status === 'picked_up' && (
-                          <Button
-                            onClick={() => completeDelivery(order.id)}
-                            className="w-full mt-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                          >
-                            {order.payment_method === 'cod' ? 'Confirm Cash Collected & Deliver' : 'Mark as Delivered'}
+                          <Button className="w-full mt-4" onClick={() => completeOrder(order.id)}>
+                            Mark as Delivered
                           </Button>
                         )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {geoError && (
-             <Card className="animate-fade-in bg-destructive/10 border-destructive/50">
-               <CardHeader>
-                  <CardTitle className="text-destructive">Location Error</CardTitle>
-                  <CardDescription className="text-destructive-foreground">{geoError}</CardDescription>
-               </CardHeader>
-             </Card>
-          )}
-          </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       <Footer />
