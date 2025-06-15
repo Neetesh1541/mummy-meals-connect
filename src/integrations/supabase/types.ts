@@ -339,6 +339,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      can_view_delivery_location: {
+        Args: { p_partner_id: string }
+        Returns: boolean
+      }
       clear_cart: {
         Args: { user_id: string }
         Returns: undefined
