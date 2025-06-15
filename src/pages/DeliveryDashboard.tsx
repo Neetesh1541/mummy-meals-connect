@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -117,6 +118,7 @@ export default function DeliveryDashboard() {
   }, [user, fetchOrders]);
 
   const acceptOrder = async (orderId: string) => {
+    if (!user) return;
     try {
       const { error } = await supabase
         .from('orders')
@@ -131,8 +133,8 @@ export default function DeliveryDashboard() {
     } catch (error: any) {
       console.error("Error accepting order:", error);
       toast({
-        title: "Error",
-        description: "Failed to accept the order.",
+        title: "Error Accepting Order",
+        description: error.message || "Failed to accept the order.",
         variant: "destructive"
       });
     }
@@ -153,8 +155,8 @@ export default function DeliveryDashboard() {
     } catch (error: any) {
       console.error("Error completing order:", error);
       toast({
-        title: "Error",
-        description: "Failed to complete the order.",
+        title: "Error Completing Order",
+        description: error.message || "Failed to complete the order.",
         variant: "destructive"
       });
     }
