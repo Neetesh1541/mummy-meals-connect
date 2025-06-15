@@ -153,25 +153,25 @@
 
 /* Animated soft gradient for main background */
 .animated-soft-gradient {
-  background: linear-gradient(135deg, 
+  background: linear-gradient(225deg, 
     #fef7ed, /* warm-orange-50 */
     #f0fdf4, /* pastel-green-50 */
     #fefce8, /* cream-50 */
     #eff6ff  /* blue-50 */
   );
-  background-size: 400% 400%;
-  animation: gradient 20s ease infinite;
+  background-size: 600% 600%;
+  animation: gradient 25s ease infinite;
 }
 
 .dark .animated-soft-gradient {
-  background: linear-gradient(135deg, 
+  background: linear-gradient(225deg, 
     #111827, /* gray-900 */
     rgba(88, 28, 135, 0.2), /* purple-900/20 */
     rgba(30, 58, 138, 0.2), /* blue-900/20 */
     #111827
   );
-  background-size: 400% 400%;
-  animation: gradient 25s ease infinite;
+  background-size: 600% 600%;
+  animation: gradient 30s ease infinite;
 }
 
 /* Smooth transitions */

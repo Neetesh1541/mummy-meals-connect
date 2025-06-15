@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -141,6 +140,17 @@ export default {
           '0%, 100%': { opacity: '0.3' },
           '50%': { opacity: '1' },
         },
+        'gradient-pan': {
+          '0%': { 'background-position': '0% 50%' },
+          '50%': { 'background-position': '100% 50%' },
+          '100%': { 'background-position': '0% 50%' },
+        },
+        'float-complex': {
+          '0%, 100%': { transform: 'translate(0, 0) rotate(0deg)' },
+          '25%': { transform: 'translate(20px, -20px) rotate(45deg)' },
+          '50%': { transform: 'translate(0, 0) rotate(0deg)' },
+          '75%': { transform: 'translate(-20px, 20px) rotate(-45deg)' },
+        },
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -150,6 +160,8 @@ export default {
 				'fade-in-up': 'fade-in-up 0.5s ease-out',
 				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'twinkle': 'twinkle 3s ease-in-out infinite',
+        'gradient-pan': 'gradient-pan 6s ease-in-out infinite',
+        'float-complex': 'float-complex 10s ease-in-out infinite',
 			},
 			fontFamily: {
 				'poppins': ['Poppins', 'sans-serif'],
