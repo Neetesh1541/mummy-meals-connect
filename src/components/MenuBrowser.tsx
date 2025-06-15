@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Plus, Minus, Camera, Search, Star } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Camera, Search, Star, Repeat } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { SubscriptionDialog } from "./SubscriptionDialog";
 
 interface MenuItem {
   id: string;
@@ -17,6 +18,7 @@ interface MenuItem {
   available: boolean;
   mom_id: string;
   image_url: string | null;
+  is_subscribable: boolean;
   users: {
     full_name: string;
   } | null;
@@ -69,6 +71,8 @@ export function MenuBrowser() {
   const [searchTerm, setSearchTerm] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
   const [maxPrice, setMaxPrice] = useState(500);
+  const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -110,7 +114,7 @@ export function MenuBrowser() {
     try {
       const menuPromise = supabase
         .from("menu")
-        .select(`*, users (full_name)`)
+        .select(`*, is_subscribable, users (full_name)`)
         .eq("available", true)
         .order("created_at", { ascending: false });
 
@@ -231,6 +235,11 @@ export function MenuBrowser() {
     return cartItems.find(item => item.menu_id === menuId);
   };
 
+  const handleSubscribeClick = (item: MenuItem) => {
+    setSelectedMenuItem(item);
+    setShowSubscriptionDialog(true);
+  };
+
   const filteredMenuItems = useMemo(() => {
     return menuItems
       .filter((item) =>
@@ -326,36 +335,48 @@ export function MenuBrowser() {
                     <Badge variant="default">Available</Badge>
                   </div>
 
-                  {cartQuantity > 0 ? (
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => cartItem && updateCartQuantity(cartItem.id, cartQuantity - 1)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="font-semibold">{cartQuantity}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => cartItem && updateCartQuantity(cartItem.id, cartQuantity + 1)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
+                  <div className="space-y-2">
+                    {cartQuantity > 0 ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => cartItem && updateCartQuantity(cartItem.id, cartQuantity - 1)}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="font-semibold">{cartQuantity}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => cartItem && updateCartQuantity(cartItem.id, cartQuantity + 1)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <span className="text-sm text-gray-600">In Cart</span>
                       </div>
-                      <span className="text-sm text-gray-600">In Cart</span>
-                    </div>
-                  ) : (
-                    <Button
-                      onClick={() => addToCart(item)}
-                      className="w-full bg-gradient-to-r from-warm-orange-500 to-warm-orange-600 hover:from-warm-orange-600 hover:to-warm-orange-700"
-                    >
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Add to Cart
-                    </Button>
-                  )}
+                    ) : (
+                      <Button
+                        onClick={() => addToCart(item)}
+                        className="w-full bg-gradient-to-r from-warm-orange-500 to-warm-orange-600 hover:from-warm-orange-600 hover:to-warm-orange-700"
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Add to Cart
+                      </Button>
+                    )}
+                    {item.is_subscribable && (
+                        <Button
+                            variant="outline"
+                            onClick={() => handleSubscribeClick(item)}
+                            className="w-full"
+                        >
+                            <Repeat className="h-4 w-4 mr-2" />
+                            Subscribe
+                        </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -377,6 +398,14 @@ export function MenuBrowser() {
           <h3 className="text-lg font-semibold mb-2">No meals found</h3>
           <p className="text-gray-600">We couldn't find any meals matching your search. Try another keyword!</p>
         </div>
+      )}
+      
+      {selectedMenuItem && (
+        <SubscriptionDialog
+            isOpen={showSubscriptionDialog}
+            onClose={() => setShowSubscriptionDialog(false)}
+            menuItem={selectedMenuItem}
+        />
       )}
     </div>
   );

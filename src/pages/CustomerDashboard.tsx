@@ -7,8 +7,9 @@ import { CartSidebar } from "@/components/CartSidebar";
 import { OrderTracking } from "@/components/OrderTracking";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, MessageSquare, Home } from "lucide-react";
+import { Clock, MessageSquare, Home, Repeat } from "lucide-react";
 import { WavyBackground } from "@/components/WavyBackground";
+import { MySubscriptions } from "@/components/MySubscriptions";
 
 export default function CustomerDashboard() {
   const [showCart, setShowCart] = useState(false);
@@ -31,7 +32,7 @@ export default function CustomerDashboard() {
           <div className="flex gap-6">
             <div className="flex-1">
               <Tabs defaultValue="browse" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsList className="grid w-full grid-cols-4 mb-6">
                   <TabsTrigger value="browse" className="gap-2">
                     <Home className="h-4 w-4" />
                     Browse Meals
@@ -39,6 +40,10 @@ export default function CustomerDashboard() {
                   <TabsTrigger value="orders" className="gap-2">
                     <Clock className="h-4 w-4" />
                     Track Orders
+                  </TabsTrigger>
+                  <TabsTrigger value="subscriptions" className="gap-2">
+                    <Repeat className="h-4 w-4" />
+                    My Subscriptions
                   </TabsTrigger>
                   <TabsTrigger value="feedback" className="gap-2">
                     <MessageSquare className="h-4 w-4" />
@@ -52,6 +57,10 @@ export default function CustomerDashboard() {
 
                 <TabsContent value="orders" className="animate-fade-in">
                   <OrderTracking />
+                </TabsContent>
+                
+                <TabsContent value="subscriptions" className="animate-fade-in">
+                  <MySubscriptions />
                 </TabsContent>
 
                 <TabsContent value="feedback" className="animate-fade-in">

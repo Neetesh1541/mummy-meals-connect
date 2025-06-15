@@ -168,6 +168,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_subscribable: boolean | null
           mom_id: string | null
           price: number | null
           title: string | null
@@ -178,6 +179,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_subscribable?: boolean | null
           mom_id?: string | null
           price?: number | null
           title?: string | null
@@ -188,6 +190,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_subscribable?: boolean | null
           mom_id?: string | null
           price?: number | null
           title?: string | null
@@ -326,6 +329,66 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          customer_id: string
+          delivery_day: string | null
+          delivery_time: string | null
+          end_date: string | null
+          frequency: string
+          id: string
+          menu_id: string
+          quantity: number
+          shipping_details: Json | null
+          start_date: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          delivery_day?: string | null
+          delivery_time?: string | null
+          end_date?: string | null
+          frequency: string
+          id?: string
+          menu_id: string
+          quantity?: number
+          shipping_details?: Json | null
+          start_date: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          delivery_day?: string | null
+          delivery_time?: string | null
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          menu_id?: string
+          quantity?: number
+          shipping_details?: Json | null
+          start_date?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "menu"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       table_name: {
         Row: {
