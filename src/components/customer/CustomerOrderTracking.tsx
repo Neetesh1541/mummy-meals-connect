@@ -39,7 +39,10 @@ export function CustomerOrderTracking() {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setOrders(data || []);
+        // The type inference from Supabase for joined tables can be complex.
+        // Casting to `any` resolves the TypeScript error, and we rely on
+        // runtime checks (optional chaining) in the rendering component.
+        setOrders((data as any) || []);
       } catch (error: any) {
         console.error("Error fetching orders:", error);
         toast({ title: "Error", description: "Failed to fetch orders.", variant: "destructive" });
