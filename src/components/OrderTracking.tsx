@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, Truck, MapPin, Phone, User, Wallet, CreditCard } from "lucide-react";
+import { Clock, CheckCircle, Truck, MapPin, Phone, User, Wallet, CreditCard, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { differenceInMinutes } from "date-fns";
 import { DeliveryMap } from './DeliveryMap';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChatBox } from "./ChatBox";
 
 interface Order {
   id: string;
@@ -275,6 +277,18 @@ export function OrderTracking() {
                     </div>
                   )}
                 </div>
+                
+                <Collapsible className="mt-4">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Chat about this order</span>
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-4">
+                    <ChatBox orderId={order.id} />
+                  </CollapsibleContent>
+                </Collapsible>
                 
                 <div className="mt-4 flex space-x-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div className={`flex-1 ${['placed', 'preparing', 'ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />

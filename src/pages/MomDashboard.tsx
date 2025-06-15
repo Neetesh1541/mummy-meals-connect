@@ -3,11 +3,13 @@ import { Footer } from "@/components/Footer";
 import { MenuManagement } from "@/components/MenuManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChefHat, Users, DollarSign, Clock, Phone, MapPin, Truck, CreditCard, Wallet } from "lucide-react";
+import { ChefHat, Users, DollarSign, Clock, Phone, MapPin, Truck, CreditCard, Wallet, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { DeliveryMap } from "@/components/DeliveryMap";
+import { ChatBox } from "@/components/ChatBox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface Order {
   id: string;
@@ -329,6 +331,19 @@ export default function MomDashboard() {
                               <DeliveryMap deliveryPartnerId={order.delivery_partner_id} />
                             </div>
                           )}
+
+                          <Collapsible className="mt-4">
+                            <CollapsibleTrigger asChild>
+                              <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                                <MessageSquare className="h-4 w-4" />
+                                <span>Chat about this order</span>
+                              </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mt-4">
+                              <ChatBox orderId={order.id} />
+                            </CollapsibleContent>
+                          </Collapsible>
+
                         </CardContent>
                         <div className={`h-1.5 w-full ${getStatusColorForMom(order.status)}`}></div>
                       </Card>
