@@ -80,6 +80,48 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          order_id: string
+          rating: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          order_id: string
+          rating: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          order_id?: string
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_customer_id"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu: {
         Row: {
           available: boolean | null
@@ -383,6 +425,14 @@ export type Database = {
           quantity: number
           menu_id: string
           menu: Json
+        }[]
+      }
+      get_menu_ratings: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          menu_id_arg: string
+          avg_rating: number
+          rating_count: number
         }[]
       }
       get_user_cart: {

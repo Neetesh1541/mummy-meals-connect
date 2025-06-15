@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Plus, Minus, Camera, Search } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Camera, Search, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 
 interface MenuItem {
   id: string;
@@ -27,43 +28,74 @@ interface CartItem {
   quantity: number;
 }
 
+interface Rating {
+  menu_id_arg: string;
+  avg_rating: number;
+  rating_count: number;
+}
+
+const StarDisplay = ({ rating, count }: { rating: number; count: number }) => {
+  const fullStars = Math.round(rating);
+  const emptyStars = 5 - fullStars;
+
+  if (count === 0) {
+    return <div className="text-sm text-muted-foreground">No ratings yet</div>;
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <div className="flex items-center text-yellow-400">
+        {[...Array(fullStars)].map((_, i) => (
+          <Star key={`full-${i}`} className="h-4 w-4 fill-current" />
+        ))}
+        {[...Array(emptyStars)].map((_, i) => (
+          <Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />
+        ))}
+      </div>
+      <span className="text-xs text-muted-foreground ml-1">
+        ({count} {count === 1 ? "rating" : "ratings"})
+      </span>
+    </div>
+  );
+};
+
 export function MenuBrowser() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [ratings, setRatings] = useState<Rating[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
+  const [maxPrice, setMaxPrice] = useState(500);
 
   useEffect(() => {
     if (user) {
-      fetchMenuItems();
+      fetchMenuItemsAndRatings();
       fetchCartItems();
 
       const channel = supabase
         .channel(`customer-dashboard-browser-${user.id}`)
         .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'menu',
-          },
-          () => {
-            fetchMenuItems();
-          }
+          "postgres_changes",
+          { event: "*", schema: "public", table: "menu" },
+          () => fetchMenuItemsAndRatings()
         )
         .on(
-          'postgres_changes',
+          "postgres_changes",
+          { event: "*", schema: "public", table: "feedback" },
+          () => fetchMenuItemsAndRatings()
+        )
+        .on(
+          "postgres_changes",
           {
-            event: '*',
-            schema: 'public',
-            table: 'cart',
+            event: "*",
+            schema: "public",
+            table: "cart",
             filter: `customer_id=eq.${user.id}`,
           },
-          () => {
-            fetchCartItems();
-          }
+          () => fetchCartItems()
         )
         .subscribe();
 
@@ -73,24 +105,44 @@ export function MenuBrowser() {
     }
   }, [user]);
 
-  const fetchMenuItems = async () => {
+  const fetchMenuItemsAndRatings = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('menu')
-        .select(`
-          *,
-          users (full_name)
-        `)
-        .eq('available', true)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setMenuItems(data || []);
+      const menuPromise = supabase
+        .from("menu")
+        .select(`*, users (full_name)`)
+        .eq("available", true)
+        .order("created_at", { ascending: false });
+
+      const ratingsPromise = supabase.rpc("get_menu_ratings");
+
+      const [
+        { data: menuData, error: menuError },
+        { data: ratingsData, error: ratingsError },
+      ] = await Promise.all([menuPromise, ratingsPromise]);
+
+      if (menuError) throw menuError;
+      if (ratingsError) throw ratingsError;
+
+      setMenuItems(menuData || []);
+      setRatings(ratingsData || []);
+
+      if (menuData && menuData.length > 0) {
+        const prices = menuData.map((item) => item.price || 0).filter(p => p > 0);
+        if (prices.length > 0) {
+          const newMaxPrice = Math.ceil(Math.max(...prices));
+          setMaxPrice(newMaxPrice);
+          // Only set price range if it's the initial load
+          if (loading) {
+            setPriceRange([0, newMaxPrice]);
+          }
+        }
+      }
     } catch (error) {
-      console.error('Error fetching menu items:', error);
+      console.error("Error fetching menu items or ratings:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch menu items",
+        description: "Failed to fetch menu items or ratings",
         variant: "destructive",
       });
     } finally {
@@ -179,9 +231,16 @@ export function MenuBrowser() {
     return cartItems.find(item => item.menu_id === menuId);
   };
 
-  const filteredMenuItems = menuItems.filter(item =>
-    item.title?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMenuItems = useMemo(() => {
+    return menuItems
+      .filter((item) =>
+        item.title?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .filter((item) => {
+        if (item.price === null || typeof item.price === 'undefined') return true;
+        return item.price >= priceRange[0] && item.price <= priceRange[1];
+      });
+  }, [menuItems, searchTerm, priceRange]);
 
   if (loading) {
     return <div className="text-center py-8">Loading delicious meals...</div>;
@@ -193,19 +252,39 @@ export function MenuBrowser() {
         <h2 className="text-2xl font-bold">Available Meals</h2>
         <div className="flex items-center gap-2">
           <ShoppingCart className="h-5 w-5" />
-          <span className="font-semibold">{cartItems.reduce((sum, item) => sum + item.quantity, 0)} items</span>
+          <span className="font-semibold">
+            {cartItems.reduce((sum, item) => sum + item.quantity, 0)} items
+          </span>
         </div>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search for delicious meals..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 w-full"
-        />
+      <div className="grid md:grid-cols-3 gap-4 items-end">
+        <div className="md:col-span-2 relative">
+           <div className="text-sm text-muted-foreground mb-2">Search by name</div>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground mt-2" />
+          <Input
+            type="text"
+            placeholder="Search for delicious meals..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-full"
+          />
+        </div>
+        <div className="md:col-span-1">
+          <div className="flex justify-between text-sm text-muted-foreground mb-2">
+            <span>Price Range</span>
+            <span>
+              ₹{priceRange[0]} - ₹{priceRange[1]}
+            </span>
+          </div>
+          <Slider
+            value={priceRange}
+            onValueChange={(value) => setPriceRange(value as [number, number])}
+            max={maxPrice}
+            step={10}
+            className="w-full"
+          />
+        </div>
       </div>
 
       {filteredMenuItems.length > 0 && (
@@ -213,9 +292,13 @@ export function MenuBrowser() {
           {filteredMenuItems.map((item) => {
             const cartQuantity = getCartQuantity(item.id);
             const cartItem = getCartItem(item.id);
-            
+            const itemRating = ratings.find(r => r.menu_id_arg === item.id);
+
             return (
-              <Card key={item.id} className="hover:shadow-lg transition-all duration-300 hover:scale-105 animate-fade-in flex flex-col overflow-hidden">
+              <Card
+                key={item.id}
+                className="hover:shadow-lg transition-all duration-300 hover:scale-105 animate-fade-in flex flex-col overflow-hidden"
+              >
                 {item.image_url ? (
                   <img src={item.image_url} alt={item.title || 'Menu item'} className="w-full h-48 object-cover" />
                 ) : (
@@ -223,21 +306,26 @@ export function MenuBrowser() {
                     <Camera className="h-12 w-12 text-gray-400" />
                   </div>
                 )}
-                <CardHeader className="flex-grow">
+                <CardHeader className="flex-grow pb-2">
                   <CardTitle className="flex justify-between items-start">
                     <span>{item.title}</span>
                     <Badge variant="secondary">
-                      by {item.users?.full_name || 'Mom'}
+                      by {item.users?.full_name || "Mom"}
                     </Badge>
                   </CardTitle>
                   <CardDescription>{item.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="mb-4">
+                     <StarDisplay rating={itemRating?.avg_rating || 0} count={itemRating?.rating_count || 0} />
+                  </div>
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-2xl font-bold text-green-600">₹{item.price}</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      ₹{item.price}
+                    </span>
                     <Badge variant="default">Available</Badge>
                   </div>
-                  
+
                   {cartQuantity > 0 ? (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
