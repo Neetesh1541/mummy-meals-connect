@@ -6,10 +6,7 @@ export interface Order {
   quantity: number;
   total_amount?: number;
   payment_method?: string;
-  shipping_details?: {
-    name: string;
-    address: any;
-  };
+  shipping_details?: any;
   estimated_delivery_at?: string | null;
   delivery_partner_id?: string | null;
   delivery_fee?: number;
