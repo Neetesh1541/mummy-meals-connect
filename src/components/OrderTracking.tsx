@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, Truck, MapPin, Phone, User } from "lucide-react";
+import { Clock, CheckCircle, Truck, MapPin, Phone, User, Wallet, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { differenceInMinutes } from "date-fns";
@@ -14,6 +14,7 @@ interface Order {
   total_amount: number;
   quantity: number;
   created_at: string;
+  payment_method: string;
   estimated_delivery_at: string | null;
   menu: {
     title: string;
@@ -70,6 +71,7 @@ export function OrderTracking() {
           created_at,
           estimated_delivery_at,
           delivery_partner_id,
+          payment_method,
           menu!orders_menu_id_fkey(title, price),
           mom:users!orders_mom_id_fkey(full_name, phone, address),
           delivery_partner:users!orders_delivery_partner_id_fkey(full_name, phone)
@@ -202,9 +204,22 @@ export function OrderTracking() {
                   <span className="text-lg font-semibold text-green-600">
                     ₹{order.total_amount}
                   </span>
-                  <span className="text-sm text-gray-500">
-                    {new Date(order.created_at).toLocaleDateString()}
-                  </span>
+                   <div className="flex items-center gap-2">
+                     {order.payment_method === 'cod' ? (
+                        <Badge variant="outline" className="text-blue-600 border-blue-600">
+                            <Wallet className="h-4 w-4 mr-1" />
+                            Cash on Delivery
+                        </Badge>
+                    ) : (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                            <CreditCard className="h-4 w-4 mr-1" />
+                            Paid Online
+                        </Badge>
+                    )}
+                    <span className="text-sm text-gray-500">
+                        {new Date(order.created_at).toLocaleDateString()}
+                    </span>
+                   </div>
                 </div>
                 
                 <div className="space-y-4 text-sm text-gray-600 border-t pt-4 mt-4">

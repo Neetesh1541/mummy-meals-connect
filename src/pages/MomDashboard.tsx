@@ -48,6 +48,8 @@ export default function MomDashboard() {
     totalOrders: 0,
     activeOrders: 0,
     totalRevenue: 0,
+    onlineRevenue: 0,
+    codRevenue: 0,
     menuItems: 0,
   });
 
@@ -95,16 +97,26 @@ export default function MomDashboard() {
     if (!user) return;
     try {
       const [ordersResponse, menuResponse] = await Promise.all([
-        supabase.from('orders').select('status, total_amount').eq('mom_id', user.id),
+        supabase.from('orders').select('status, total_amount, payment_method').eq('mom_id', user.id),
         supabase.from('menu').select('id', { count: 'exact' }).eq('mom_id', user.id)
       ]);
       
       const orders = ordersResponse.data || [];
       
+      const onlineRevenue = orders
+        .filter(o => o.payment_method === 'stripe')
+        .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+
+      const codRevenue = orders
+        .filter(o => o.payment_method === 'cod')
+        .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+
       setStats({
         totalOrders: orders.length,
         activeOrders: orders.filter(order => ['placed', 'preparing', 'ready'].includes(order.status ?? '')).length,
         totalRevenue: orders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
+        onlineRevenue,
+        codRevenue,
         menuItems: menuResponse.count || 0,
       });
     } catch (error) {
@@ -178,6 +190,7 @@ export default function MomDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalOrders}</div>
+                <p className="text-xs text-muted-foreground">{stats.activeOrders} active</p>
               </CardContent>
             </Card>
 
@@ -192,28 +205,30 @@ export default function MomDashboard() {
                 <div className="text-2xl font-bold">{stats.menuItems}</div>
               </CardContent>
             </Card>
-
-            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-cream-400">
+            
+            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-green-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
-                <div className="p-2 bg-cream-100 rounded-full">
-                  <Clock className="h-4 w-4 text-cream-500" />
+                <CardTitle className="text-sm font-medium">Online Revenue</CardTitle>
+                <div className="p-2 bg-green-100 rounded-full">
+                  <CreditCard className="h-4 w-4 text-green-500" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.activeOrders}</div>
+                <div className="text-2xl font-bold">₹{stats.onlineRevenue.toFixed(2)}</div>
+                 <p className="text-xs text-muted-foreground">From Stripe payments</p>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-green-400">
+            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-blue-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                <div className="p-2 bg-green-100 rounded-full">
-                  <DollarSign className="h-4 w-4 text-green-500" />
+                <CardTitle className="text-sm font-medium">COD Revenue</CardTitle>
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <Wallet className="h-4 w-4 text-blue-500" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹{stats.totalRevenue.toFixed(2)}</div>
+                <div className="text-2xl font-bold">₹{stats.codRevenue.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">To be collected</p>
               </CardContent>
             </Card>
           </div>

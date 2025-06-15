@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Truck, MapPin, Clock, DollarSign, Phone, User } from "lucide-react";
+import { Truck, MapPin, Clock, DollarSign, Phone, User, Wallet, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +16,7 @@ interface OrderInfo {
   total_amount: number;
   delivery_fee: number | null;
   created_at: string;
+  payment_method: string;
   menu: {
     title: string;
   };
@@ -98,6 +98,7 @@ export default function DeliveryDashboard() {
           total_amount,
           delivery_fee,
           created_at,
+          payment_method,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name, phone, address),
           mom:users!orders_mom_id_fkey(full_name, phone, address)
@@ -117,6 +118,7 @@ export default function DeliveryDashboard() {
           total_amount,
           delivery_fee,
           created_at,
+          payment_method,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name, phone, address),
           mom:users!orders_mom_id_fkey(full_name, phone, address)
@@ -303,6 +305,19 @@ export default function DeliveryDashboard() {
                             <p className="text-sm text-gray-500">
                                 {new Date(order.created_at).toLocaleString()}
                             </p>
+                             <div className="flex items-center gap-2 mt-2">
+                                {order.payment_method === 'cod' ? (
+                                  <>
+                                    <Wallet className="h-4 w-4 text-blue-500" />
+                                    <span className="text-sm text-blue-500 font-medium">Cash on Delivery</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CreditCard className="h-4 w-4 text-green-500" />
+                                    <span className="text-sm text-green-500 font-medium">Paid Online</span>
+                                  </>
+                                )}
+                              </div>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-green-600">₹{order.total_amount}</p>
@@ -361,6 +376,19 @@ export default function DeliveryDashboard() {
                             <p className="text-sm text-gray-500">
                               {new Date(order.created_at).toLocaleDateString()}
                             </p>
+                            <div className="flex items-center gap-2 mt-2">
+                                {order.payment_method === 'cod' ? (
+                                    <>
+                                    <Wallet className="h-4 w-4 text-blue-500" />
+                                    <span className="text-sm text-blue-500 font-medium">Collect: ₹{order.total_amount}</span>
+                                    </>
+                                ) : (
+                                    <>
+                                    <CreditCard className="h-4 w-4 text-green-500" />
+                                    <span className="text-sm text-green-500 font-medium">Paid Online</span>
+                                    </>
+                                )}
+                            </div>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-green-600">₹{order.total_amount}</p>
@@ -391,7 +419,7 @@ export default function DeliveryDashboard() {
                             onClick={() => completeDelivery(order.id)}
                             className="w-full mt-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                           >
-                            Mark as Delivered
+                            {order.payment_method === 'cod' ? 'Confirm Cash Collected & Deliver' : 'Mark as Delivered'}
                           </Button>
                         )}
                       </div>
