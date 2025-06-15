@@ -161,7 +161,8 @@ export function CartSidebar() {
         const { error } = await supabase.rpc('create_orders_from_cart', {
             p_customer_id: user.id,
             p_shipping_details: shipping_details,
-            p_customer_phone: address.phone
+            p_customer_phone: address.phone,
+            p_payment_method: 'cod'
         });
 
         if (error) {

@@ -1,10 +1,9 @@
-
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MenuManagement } from "@/components/MenuManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChefHat, Users, DollarSign, Clock, Phone, MapPin, Truck } from "lucide-react";
+import { ChefHat, Users, DollarSign, Clock, Phone, MapPin, Truck, CreditCard, Wallet } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +14,7 @@ interface Order {
   status: string;
   total_amount: number;
   created_at: string;
+  payment_method: string;
   delivery_partner_id?: string;
   menu: {
     title: string;
@@ -75,6 +75,7 @@ export default function MomDashboard() {
           status,
           total_amount,
           created_at,
+          payment_method,
           delivery_partner_id,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name, phone, address),
@@ -256,6 +257,19 @@ export default function MomDashboard() {
                               <p className="text-sm text-gray-500">
                                 {new Date(order.created_at).toLocaleString()}
                               </p>
+                               <div className="flex items-center gap-2 mt-2">
+                                {order.payment_method === 'cod' ? (
+                                  <>
+                                    <Wallet className="h-4 w-4 text-blue-500" />
+                                    <span className="text-sm text-blue-500 font-medium">Cash on Delivery</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CreditCard className="h-4 w-4 text-green-500" />
+                                    <span className="text-sm text-green-500 font-medium">Paid Online</span>
+                                  </>
+                                )}
+                              </div>
                             </div>
                             <div className="text-right">
                               <p className="text-2xl font-bold text-green-600">₹{order.total_amount}</p>

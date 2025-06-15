@@ -132,6 +132,7 @@ export type Database = {
           id: string
           menu_id: string | null
           mom_id: string | null
+          payment_method: string
           quantity: number | null
           shipping_details: Json | null
           status: string | null
@@ -147,6 +148,7 @@ export type Database = {
           id?: string
           menu_id?: string | null
           mom_id?: string | null
+          payment_method?: string
           quantity?: number | null
           shipping_details?: Json | null
           status?: string | null
@@ -162,6 +164,7 @@ export type Database = {
           id?: string
           menu_id?: string | null
           mom_id?: string | null
+          payment_method?: string
           quantity?: number | null
           shipping_details?: Json | null
           status?: string | null
@@ -360,6 +363,12 @@ export type Database = {
               p_customer_id: string
               p_shipping_details: Json
               p_customer_phone: string
+            }
+          | {
+              p_customer_id: string
+              p_shipping_details: Json
+              p_customer_phone: string
+              p_payment_method?: string
             }
         Returns: undefined
       }
