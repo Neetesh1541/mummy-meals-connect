@@ -126,6 +126,7 @@ export type Database = {
           created_at: string | null
           customer_id: string | null
           customer_phone: string | null
+          delivery_fee: number | null
           delivery_partner_id: string | null
           estimated_delivery_at: string | null
           id: string
@@ -140,6 +141,7 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           customer_phone?: string | null
+          delivery_fee?: number | null
           delivery_partner_id?: string | null
           estimated_delivery_at?: string | null
           id?: string
@@ -154,6 +156,7 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           customer_phone?: string | null
+          delivery_fee?: number | null
           delivery_partner_id?: string | null
           estimated_delivery_at?: string | null
           id?: string

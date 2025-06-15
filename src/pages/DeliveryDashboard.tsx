@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -14,6 +15,7 @@ interface OrderInfo {
   id: string;
   status: string;
   total_amount: number;
+  delivery_fee: number | null;
   created_at: string;
   menu: {
     title: string;
@@ -41,7 +43,7 @@ export default function DeliveryDashboard() {
   const [stats, setStats] = useState({
     totalDeliveries: 0,
     activeDeliveries: 0,
-    todayEarnings: 850,
+    todayEarnings: 0,
     rating: 4.8,
   });
 
@@ -94,6 +96,7 @@ export default function DeliveryDashboard() {
           id,
           status,
           total_amount,
+          delivery_fee,
           created_at,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name, phone, address),
@@ -112,6 +115,7 @@ export default function DeliveryDashboard() {
           id,
           status,
           total_amount,
+          delivery_fee,
           created_at,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name, phone, address),
@@ -124,10 +128,14 @@ export default function DeliveryDashboard() {
       setMyOrders(assigned || []);
 
       // Update stats
+      const deliveredOrders = (assigned || []).filter(o => o.status === 'delivered');
+      const totalEarnings = deliveredOrders.reduce((sum, order) => sum + (order.delivery_fee || 0), 0);
+      
       setStats(prev => ({
         ...prev,
-        totalDeliveries: (assigned || []).filter(o => o.status === 'delivered').length,
+        totalDeliveries: deliveredOrders.length,
         activeDeliveries: (assigned || []).filter(o => o.status === 'picked_up').length,
+        todayEarnings: totalEarnings,
       }));
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -249,7 +257,7 @@ export default function DeliveryDashboard() {
 
             <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-green-400">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Today's Earnings</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
                 <div className="p-2 bg-green-100 rounded-full">
                   <DollarSign className="h-4 w-4 text-green-500" />
                 </div>
