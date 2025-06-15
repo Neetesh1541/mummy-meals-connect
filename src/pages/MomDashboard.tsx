@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DeliveryMap } from "@/components/DeliveryMap";
 import { ChatBox } from "@/components/ChatBox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
 
 interface Order {
   id: string;
