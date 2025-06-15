@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -10,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Order } from "@/types/order";
 import { AvailableDeliveriesTab } from "@/components/delivery/AvailableDeliveriesTab";
 import { MyDeliveriesTab } from "@/components/delivery/MyDeliveriesTab";
+import { StatCard } from "@/components/delivery/StatCard";
+import { DollarSign, Truck } from "lucide-react";
 
 export default function DeliveryDashboard() {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ export default function DeliveryDashboard() {
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
+  const [stats, setStats] = useState({ totalEarnings: 0, completedDeliveries: 0 });
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
@@ -28,8 +30,10 @@ export default function DeliveryDashboard() {
         .select(`
           id,
           status,
-          menu (title),
+          created_at,
           quantity,
+          delivery_fee,
+          menu (title),
           shipping_details,
           customer:users!orders_customer_id_fkey (full_name, phone),
           mom:users!orders_mom_id_fkey (full_name, phone, address)
@@ -45,8 +49,10 @@ export default function DeliveryDashboard() {
         .select(`
           id,
           status,
-          menu (title),
+          created_at,
           quantity,
+          delivery_fee,
+          menu (title),
           shipping_details,
           customer:users!orders_customer_id_fkey (full_name, phone),
           mom:users!orders_mom_id_fkey (full_name, phone, address)
@@ -59,9 +65,19 @@ export default function DeliveryDashboard() {
       const sortedMine = (mine || []).sort((a, b) => {
         const aVal = statusOrder[a.status] || 99;
         const bVal = statusOrder[b.status] || 99;
-        return aVal - bVal;
+        if (aVal !== bVal) {
+          return aVal - bVal;
+        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
       setMyOrders(sortedMine);
+
+      const completed = mine?.filter(o => o.status === 'delivered') || [];
+      const earnings = completed.reduce((acc, order) => acc + (order.delivery_fee || 0), 0);
+      setStats({
+        totalEarnings: earnings,
+        completedDeliveries: completed.length
+      });
 
     } catch (error: any) {
       console.error("Error fetching orders:", error);
@@ -173,6 +189,21 @@ export default function DeliveryDashboard() {
             <p className="text-muted-foreground mt-2 animate-fade-in">
               Accept deliveries and make customers happy
             </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-8 animate-fade-in">
+            <StatCard 
+              title="Total Earnings"
+              value={`₹${stats.totalEarnings.toFixed(2)}`}
+              icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+              description="From completed deliveries"
+            />
+            <StatCard 
+              title="Completed Deliveries"
+              value={stats.completedDeliveries}
+              icon={<Truck className="h-4 w-4 text-muted-foreground" />}
+              description="Making customers happy"
+            />
           </div>
 
           <Tabs defaultValue="available" className="w-full">

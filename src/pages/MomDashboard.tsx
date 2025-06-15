@@ -1,4 +1,3 @@
-
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MenuManagement } from "@/components/MenuManagement";
@@ -14,27 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
-
-interface Order {
-  id: string;
-  status: string;
-  total_amount: number;
-  created_at: string;
-  payment_method: string;
-  delivery_partner_id?: string;
-  menu: {
-    title: string;
-  };
-  customer: {
-    full_name: string;
-    phone?: string;
-    address?: any;
-  };
-  delivery_partner?: {
-    full_name: string;
-    phone?: string;
-  };
-}
+import { Order } from "@/types/order";
 
 const getStatusColorForMom = (status: string) => {
   switch (status) {
@@ -107,6 +86,7 @@ export default function MomDashboard() {
           total_amount,
           created_at,
           payment_method,
+          quantity,
           delivery_partner_id,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name, phone, address),
@@ -116,7 +96,7 @@ export default function MomDashboard() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setOrders(data || []);
+      setOrders(data as Order[] || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
@@ -309,6 +289,9 @@ export default function MomDashboard() {
                               <p className="text-sm text-gray-500">
                                 {new Date(order.created_at).toLocaleString()}
                               </p>
+                              <p className="text-sm text-gray-500">
+                                Quantity: {order.quantity}
+                              </p>
                                <div className="flex items-center gap-2 mt-2">
                                 {order.payment_method === 'cod' ? (
                                   <>
@@ -332,9 +315,9 @@ export default function MomDashboard() {
                              <div>
                                 <h4 className="font-semibold flex items-center gap-2 mb-2"><Users className="h-4 w-4" /> Customer Details</h4>
                                 <div className="pl-6 space-y-1">
-                                    <p><strong>Name:</strong> {order.customer.full_name}</p>
-                                    <p className="flex items-start gap-2"><strong><Phone className="h-4 w-4 mt-0.5" />:</strong> <span>{order.customer.phone || 'Not provided'}</span></p>
-                                    <p className="flex items-start gap-2"><strong><MapPin className="h-4 w-4 mt-0.5" />:</strong> <span>{formatAddress(order.customer.address)}</span></p>
+                                    <p><strong>Name:</strong> {order.customer?.full_name}</p>
+                                    <p className="flex items-start gap-2"><strong><Phone className="h-4 w-4 mt-0.5" />:</strong> <span>{order.customer?.phone || 'Not provided'}</span></p>
+                                    <p className="flex items-start gap-2"><strong><MapPin className="h-4 w-4 mt-0.5" />:</strong> <span>{formatAddress(order.customer?.address)}</span></p>
                                 </div>
                             </div>
 

@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,35 +41,39 @@ export function OrderCard({ order, isMyOrder, onAccept, onComplete, updatingOrde
           <div>Qty: {order.quantity}</div>
         </div>
         <div className="text-xs text-gray-500 mb-2">
-          To be delivered to {order.shipping_details.name}
+          To be delivered to {order.shipping_details?.name}
         </div>
         <div className="border-t pt-2 mt-2 space-y-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-gray-500" />
-              <span className="font-semibold">Customer: {order.customer.full_name}</span>
-              <a href={`tel:${order.customer.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
-                <Phone className="h-3 w-3" />
-                <span>Call</span>
-              </a>
+              <span className="font-semibold">Customer: {order.customer?.full_name}</span>
+              {order.customer?.phone && (
+                <a href={`tel:${order.customer.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
+                  <Phone className="h-3 w-3" />
+                  <span>Call</span>
+                </a>
+              )}
             </div>
             <div className="flex items-start gap-2 pl-6">
               <MapPin className="h-4 w-4 text-gray-500 mt-1" />
-              <span className="text-xs">{formatAddress(order.shipping_details.address)}</span>
+              <span className="text-xs">{formatAddress(order.shipping_details?.address)}</span>
             </div>
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-gray-500" />
-              <span className="font-semibold">Chef: {order.mom.full_name}</span>
-              <a href={`tel:${order.mom.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
-                <Phone className="h-3 w-3" />
-                <span>Call</span>
-              </a>
+              <span className="font-semibold">Chef: {order.mom?.full_name}</span>
+              {order.mom?.phone && (
+                <a href={`tel:${order.mom.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
+                  <Phone className="h-3 w-3" />
+                  <span>Call</span>
+                </a>
+              )}
             </div>
             <div className="flex items-start gap-2 pl-6">
               <MapPin className="h-4 w-4 text-gray-500 mt-1" />
-              <span className="text-xs">{formatAddress(order.mom.address)}</span>
+              <span className="text-xs">{formatAddress(order.mom?.address)}</span>
             </div>
           </div>
         </div>

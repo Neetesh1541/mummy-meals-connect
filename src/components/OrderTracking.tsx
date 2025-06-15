@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,30 +9,7 @@ import { differenceInMinutes } from "date-fns";
 import { DeliveryMap } from './DeliveryMap';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChatBox } from "./ChatBox";
-
-interface Order {
-  id: string;
-  status: string;
-  total_amount: number;
-  quantity: number;
-  created_at: string;
-  payment_method: string;
-  estimated_delivery_at: string | null;
-  menu: {
-    title: string;
-    price: number;
-  };
-  mom: {
-    full_name: string;
-    phone?: string;
-    address?: any;
-  };
-  delivery_partner?: {
-    full_name: string;
-    phone?: string;
-  };
-  delivery_partner_id?: string;
-}
+import { Order } from "@/types/order";
 
 export function OrderTracking() {
   const { user } = useAuth();
@@ -70,7 +46,7 @@ export function OrderTracking() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setOrders(data || []);
+      setOrders(data as Order[] || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
@@ -189,7 +165,7 @@ export function OrderTracking() {
                   <div>
                     <CardTitle className="text-lg">{order.menu.title}</CardTitle>
                     <CardDescription>
-                      From {order.mom.full_name} • Quantity: {order.quantity}
+                      From {order.mom?.full_name} • Quantity: {order.quantity}
                     </CardDescription>
                   </div>
                   <div className="flex flex-col items-end gap-2 text-right">
@@ -228,9 +204,9 @@ export function OrderTracking() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-gray-500" />
-                      <span className="font-semibold">Chef: {order.mom.full_name}</span>
+                      <span className="font-semibold">Chef: {order.mom?.full_name}</span>
                       <div className="ml-auto flex items-center gap-2">
-                        {order.mom.phone ? (
+                        {order.mom?.phone ? (
                           <>
                             <span className="text-muted-foreground">{order.mom.phone}</span>
                             <a href={`tel:${order.mom.phone}`} className="flex items-center gap-1 text-blue-600 hover:underline">
@@ -245,7 +221,7 @@ export function OrderTracking() {
                     </div>
                      <div className="flex items-start gap-2 pl-6">
                         <MapPin className="h-4 w-4 text-gray-500 mt-1" />
-                        <span>{formatAddress(order.mom.address)}</span>
+                        <span>{formatAddress(order.mom?.address)}</span>
                     </div>
                   </div>
 
