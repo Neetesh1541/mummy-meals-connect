@@ -32,7 +32,7 @@ export default function DeliveryDashboard() {
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
-    console.log("DeliveryDashboard: Fetching orders..."); // For debugging
+    console.log("DeliveryDashboard: Fetching orders...");
     setLoading(true);
     try {
       const { data: available, error: availableError } = await supabase
@@ -52,6 +52,7 @@ export default function DeliveryDashboard() {
         .is('delivery_partner_id', null);
 
       if (availableError) throw availableError;
+      console.log('Available orders fetched:', available);
       setAvailableOrders(available || []);
 
       const { data: mine, error: mineError } = await supabase
@@ -80,6 +81,7 @@ export default function DeliveryDashboard() {
         }
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
+      console.log('My orders fetched:', sortedMine);
       setMyOrders(sortedMine);
 
       const completed = mine?.filter(o => o.status === 'delivered') || [];
@@ -104,24 +106,24 @@ export default function DeliveryDashboard() {
   useEffect(() => {
     if (user) {
       fetchOrders();
-      // All delivery partners subscribe to the same channel to get updates for all orders.
+      
+      // Subscribe to all orders changes for delivery partners
       const channel = supabase
-        .channel('available-orders-channel') // Using a custom channel name for robustness
+        .channel('delivery-orders-realtime')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'orders' },
           (payload) => {
-            console.log('DeliveryDashboard: Change received on orders table!', payload);
-            // The UI will refresh automatically. A toast on every update is too noisy.
+            console.log('DeliveryDashboard: Order change detected:', payload);
             fetchOrders();
           }
         )
         .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
-            console.log(`Successfully subscribed to 'available-orders-channel' for Delivery Dashboard`);
+            console.log('Successfully subscribed to delivery orders changes');
           }
-           if (status === 'CHANNEL_ERROR') {
-            console.error(`Subscription error on 'available-orders-channel' for Delivery Dashboard:`, err);
+          if (status === 'CHANNEL_ERROR') {
+            console.error('Delivery orders subscription error:', err);
             toast({
               title: "Connection Error",
               description: "Could not connect to real-time updates. Please refresh the page.",
@@ -131,7 +133,7 @@ export default function DeliveryDashboard() {
         });
 
       return () => {
-        console.log(`Cleaning up available-orders-channel subscription for Delivery Dashboard.`);
+        console.log('Cleaning up delivery orders subscription');
         supabase.removeChannel(channel);
       }
     }
@@ -141,6 +143,7 @@ export default function DeliveryDashboard() {
     if (!user) return;
     setUpdatingOrder(orderId);
     try {
+      console.log('Accepting order:', orderId);
       const { data, error } = await supabase.rpc('accept_delivery_order', {
         p_order_id: orderId
       });
@@ -155,11 +158,11 @@ export default function DeliveryDashboard() {
         throw new Error(errorMessage);
       }
 
+      console.log('Order accepted successfully');
       toast({
         title: "Order Accepted",
         description: "You have accepted the order. It's now in your deliveries.",
       });
-      fetchOrders(); // Manually trigger a refresh
     } catch (error: any) {
       console.error("Error accepting order:", error);
       
@@ -182,6 +185,7 @@ export default function DeliveryDashboard() {
     if (!user) return;
     setUpdatingOrder(orderId);
     try {
+      console.log('Completing order:', orderId);
       const { data, error } = await supabase.rpc('complete_delivery_order', {
         p_order_id: orderId
       });
@@ -196,11 +200,11 @@ export default function DeliveryDashboard() {
         throw new Error(errorMessage);
       }
 
+      console.log('Order completed successfully');
       toast({
         title: "Order Completed",
         description: "You have completed the order.",
       });
-      fetchOrders(); // Manually trigger a refresh
     } catch (error: any) {
       console.error("Error completing order:", error);
 

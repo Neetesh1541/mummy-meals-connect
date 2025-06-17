@@ -33,7 +33,7 @@ const truckIcon = new L.DivIcon({
       </div>
     </div>
   `,
-  className: 'bg-transparent border-0', // remove default leaflet styles
+  className: 'bg-transparent border-0',
   iconSize: [32, 32],
   iconAnchor: [16, 16]
 });
@@ -43,6 +43,7 @@ export function DeliveryMap({ deliveryPartnerId }: DeliveryMapProps) {
 
   useEffect(() => {
     const fetchInitialLocation = async () => {
+      console.log('Fetching initial location for partner:', deliveryPartnerId);
       const { data, error } = await supabase
         .from('delivery_partner_locations')
         .select('latitude, longitude')
@@ -50,6 +51,7 @@ export function DeliveryMap({ deliveryPartnerId }: DeliveryMapProps) {
         .single();
       
       if (data) {
+        console.log('Initial location found:', data);
         setLocation({ latitude: Number(data.latitude), longitude: Number(data.longitude) });
       } else if (error) {
         console.error("Error fetching initial location:", error.message);
@@ -59,6 +61,7 @@ export function DeliveryMap({ deliveryPartnerId }: DeliveryMapProps) {
   }, [deliveryPartnerId]);
 
   useEffect(() => {
+    console.log('Setting up location subscription for partner:', deliveryPartnerId);
     const channel = supabase
       .channel(`delivery-location-${deliveryPartnerId}`)
       .on(
@@ -70,15 +73,24 @@ export function DeliveryMap({ deliveryPartnerId }: DeliveryMapProps) {
           filter: `partner_id=eq.${deliveryPartnerId}`,
         },
         (payload) => {
+          console.log('Location update received:', payload);
           const newLocation = payload.new as { latitude: number, longitude: number };
           if(newLocation.latitude && newLocation.longitude) {
             setLocation({ latitude: Number(newLocation.latitude), longitude: Number(newLocation.longitude) });
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Successfully subscribed to location updates for partner ${deliveryPartnerId}`);
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error(`Location subscription error for partner ${deliveryPartnerId}:`, err);
+        }
+      });
 
     return () => {
+      console.log(`Cleaning up location subscription for partner ${deliveryPartnerId}`);
       supabase.removeChannel(channel);
     };
   }, [deliveryPartnerId]);

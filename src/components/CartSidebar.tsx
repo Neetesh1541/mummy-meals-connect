@@ -37,6 +37,7 @@ export function CartSidebar() {
     }
     
     try {
+      console.log('Fetching cart items for user:', user.id);
       const { data, error } = await supabase.rpc('get_cart_items', {
         user_id: user.id,
       });
@@ -51,7 +52,8 @@ export function CartSidebar() {
         return;
       }
       
-      setCartItems((data as any) || []);
+      console.log('Cart items fetched:', data);
+      setCartItems(data || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
       toast({
@@ -68,7 +70,7 @@ export function CartSidebar() {
 
       // Set up real-time subscription for cart changes
       const channel = supabase
-        .channel(`cart-realtime-${user.id}`)
+        .channel(`cart-changes-${user.id}`)
         .on(
           'postgres_changes',
           {
@@ -78,8 +80,8 @@ export function CartSidebar() {
             filter: `customer_id=eq.${user.id}`,
           },
           (payload) => {
-            console.log('CartSidebar: Cart change received!', payload);
-            fetchCartItems(); // Refresh cart items when changes occur
+            console.log('Cart change detected:', payload);
+            fetchCartItems();
           }
         )
         .subscribe((status, err) => {
@@ -87,7 +89,7 @@ export function CartSidebar() {
             console.log(`Successfully subscribed to cart changes for user ${user.id}`);
           }
           if (status === 'CHANNEL_ERROR') {
-            console.error(`Subscription error for cart user ${user.id}:`, err);
+            console.error(`Cart subscription error for user ${user.id}:`, err);
             toast({
               title: "Connection Error",
               description: "Could not connect to real-time updates. Please refresh the page.",
@@ -107,21 +109,22 @@ export function CartSidebar() {
 
   const updateQuantity = async (cartItemId: string, newQuantity: number) => {
     try {
+      console.log('Updating cart item:', cartItemId, 'to quantity:', newQuantity);
+      
       if (newQuantity <= 0) {
         const { error } = await supabase.rpc('remove_from_cart', {
           cart_item_id: cartItemId,
         });
         if (error) throw error;
+        console.log('Item removed from cart');
       } else {
         const { error } = await supabase.rpc('update_cart_quantity', {
           cart_item_id: cartItemId,
           new_quantity: newQuantity,
         });
         if (error) throw error;
+        console.log('Cart quantity updated');
       }
-      
-      // Real-time will handle the update, but we can also manually refresh as fallback
-      setTimeout(() => fetchCartItems(), 100);
     } catch (error: any) {
       console.error('Error updating cart:', error);
       toast({
@@ -135,13 +138,13 @@ export function CartSidebar() {
   const clearCart = async () => {
     if (!user) return;
     try {
+      console.log('Clearing cart for user:', user.id);
       const { error } = await supabase.rpc('clear_cart', {
         user_id: user.id,
       });
       
       if (error) throw error;
       
-      setCartItems([]);
       toast({
         title: "Cart cleared",
         description: "All items removed from cart",
@@ -171,6 +174,8 @@ export function CartSidebar() {
           country: 'IN',
         },
       };
+
+      console.log('Processing checkout with:', { paymentMethod, shipping_details });
 
       if (paymentMethod === 'stripe') {
         const { data, error } = await supabase.functions.invoke('create-checkout-session', {

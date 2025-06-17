@@ -30,6 +30,7 @@ export function LocationSharer() {
     setIsUpdating(true);
     
     try {
+      console.log('Updating location:', currentPosition);
       const { error } = await supabase.rpc('update_delivery_partner_location', {
         p_latitude: currentPosition.latitude,
         p_longitude: currentPosition.longitude,
@@ -43,6 +44,8 @@ export function LocationSharer() {
           variant: "destructive"
         });
         setIsSharing(false);
+      } else {
+        console.log('Location updated successfully');
       }
     } catch (error) {
       console.error("Error updating location:", error);
@@ -64,6 +67,7 @@ export function LocationSharer() {
   }, [position, isSharing, updateLocation]);
 
   const handleToggleSharing = (checked: boolean) => {
+    console.log('Location sharing toggled:', checked);
     setIsSharing(checked);
     if (checked) {
         toast({
@@ -72,8 +76,11 @@ export function LocationSharer() {
         });
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => updateLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-                (err) => console.warn(`ERROR(${err.code}): ${err.message}`)
+                (pos) => {
+                  console.log('Initial location obtained:', pos.coords);
+                  updateLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+                },
+                (err) => console.warn(`Geolocation error: ${err.code}: ${err.message}`)
             );
         }
     } else {
@@ -98,7 +105,12 @@ export function LocationSharer() {
 
   return (
     <div className="flex items-center space-x-2 rounded-lg border p-4 bg-card shadow-sm">
-      <Switch id="location-sharing" checked={isSharing} onCheckedChange={handleToggleSharing} disabled={isUpdating} />
+      <Switch 
+        id="location-sharing" 
+        checked={isSharing} 
+        onCheckedChange={handleToggleSharing} 
+        disabled={isUpdating} 
+      />
       <Label htmlFor="location-sharing" className="flex-grow flex items-center cursor-pointer">
         Share My Location
         {isUpdating && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
