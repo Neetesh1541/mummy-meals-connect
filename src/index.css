@@ -128,72 +128,112 @@
   }
 }
 
-/* Custom wavy background */
+/* Enhanced wavy background with better performance */
 .wavy-bg {
   background: linear-gradient(45deg, 
-    rgba(251, 146, 60, 0.1) 0%, 
-    rgba(34, 197, 94, 0.1) 50%, 
-    rgba(253, 224, 71, 0.1) 100%);
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
+    rgba(251, 146, 60, 0.15) 0%, 
+    rgba(34, 197, 94, 0.15) 25%,
+    rgba(253, 224, 71, 0.15) 50%,
+    rgba(168, 85, 247, 0.15) 75%,
+    rgba(251, 146, 60, 0.15) 100%);
+  background-size: 600% 600%;
+  animation: gradient 20s ease infinite;
 }
 
 @keyframes gradient {
   0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  25% { background-position: 100% 50%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
   100% { background-position: 0% 50%; }
 }
 
-/* Custom wave patterns */
+/* Enhanced wave patterns */
 .wave-pattern {
-  background-image: radial-gradient(circle at 25px 25px, rgba(251, 146, 60, 0.2) 2px, transparent 2px),
-                    radial-gradient(circle at 75px 75px, rgba(34, 197, 94, 0.2) 2px, transparent 2px);
-  background-size: 100px 100px;
+  background-image: 
+    radial-gradient(circle at 25px 25px, rgba(251, 146, 60, 0.3) 2px, transparent 2px),
+    radial-gradient(circle at 75px 75px, rgba(34, 197, 94, 0.3) 2px, transparent 2px),
+    radial-gradient(circle at 125px 25px, rgba(168, 85, 247, 0.2) 1px, transparent 1px);
+  background-size: 150px 150px, 150px 150px, 100px 100px;
+  animation: wave-pattern-move 30s linear infinite;
 }
 
-/* Animated soft gradient for main background */
+@keyframes wave-pattern-move {
+  0% { background-position: 0px 0px, 0px 0px, 0px 0px; }
+  100% { background-position: 150px 150px, -150px 75px, 100px -100px; }
+}
+
+/* Enhanced animated soft gradient */
 .animated-soft-gradient {
-  background: linear-gradient(225deg, 
+  background: linear-gradient(45deg, 
     #fef7ed, /* warm-orange-50 */
     #f0fdf4, /* pastel-green-50 */
     #fefce8, /* cream-50 */
-    #eff6ff  /* blue-50 */
+    #eff6ff, /* blue-50 */
+    #faf5ff, /* purple-50 */
+    #fef7ed  /* back to start */
   );
-  background-size: 600% 600%;
-  animation: gradient 25s ease infinite;
-}
-
-.dark .animated-soft-gradient {
-  background: linear-gradient(225deg, 
-    #111827, /* gray-900 */
-    rgba(88, 28, 135, 0.2), /* purple-900/20 */
-    rgba(30, 58, 138, 0.2), /* blue-900/20 */
-    #111827
-  );
-  background-size: 600% 600%;
+  background-size: 1000% 1000%;
   animation: gradient 30s ease infinite;
 }
 
-/* Smooth transitions */
-.smooth-transition {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.dark .animated-soft-gradient {
+  background: linear-gradient(45deg, 
+    #111827, /* gray-900 */
+    rgba(88, 28, 135, 0.3), /* purple-900/30 */
+    rgba(30, 58, 138, 0.3), /* blue-900/30 */
+    rgba(5, 46, 22, 0.3), /* green-900/30 */
+    rgba(124, 45, 18, 0.3), /* orange-900/30 */
+    #111827
+  );
+  background-size: 1000% 1000%;
+  animation: gradient 35s ease infinite;
 }
 
-/* Custom scrollbar */
+/* Enhanced smooth transitions with easing */
+.smooth-transition {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(251, 146, 60, 0.5);
-  border-radius: 4px;
+  background: linear-gradient(45deg, rgba(251, 146, 60, 0.7), rgba(34, 197, 94, 0.7));
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(251, 146, 60, 0.7);
+  background: linear-gradient(45deg, rgba(251, 146, 60, 0.9), rgba(34, 197, 94, 0.9));
+  background-clip: content-box;
+}
+
+/* Enhanced backdrop blur effects */
+.glass-effect {
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-effect {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced shadow effects */
+.shadow-glow {
+  box-shadow: 0 0 20px rgba(251, 146, 60, 0.3), 0 0 40px rgba(34, 197, 94, 0.2);
+}
+
+.shadow-glow-hover:hover {
+  box-shadow: 0 0 30px rgba(251, 146, 60, 0.5), 0 0 60px rgba(34, 197, 94, 0.3);
 }
