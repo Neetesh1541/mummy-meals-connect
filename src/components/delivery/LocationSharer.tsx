@@ -28,16 +28,23 @@ export function LocationSharer() {
   const updateLocation = useCallback(async (currentPosition: { latitude: number; longitude: number; }) => {
     if (!user) return;
     setIsUpdating(true);
-    const { error } = await supabase
-      .from('delivery_partner_locations')
-      .upsert({
-        partner_id: user.id,
-        latitude: currentPosition.latitude,
-        longitude: currentPosition.longitude,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'partner_id' });
+    
+    try {
+      const { error } = await supabase.rpc('update_delivery_partner_location', {
+        p_latitude: currentPosition.latitude,
+        p_longitude: currentPosition.longitude,
+      });
 
-    if (error) {
+      if (error) {
+        console.error("Error updating location:", error);
+        toast({
+          title: "Location Error",
+          description: "Could not share your location. Stopping sharing.",
+          variant: "destructive"
+        });
+        setIsSharing(false);
+      }
+    } catch (error) {
       console.error("Error updating location:", error);
       toast({
         title: "Location Error",
@@ -45,8 +52,9 @@ export function LocationSharer() {
         variant: "destructive"
       });
       setIsSharing(false);
+    } finally {
+      setIsUpdating(false);
     }
-    setIsUpdating(false);
   }, [user, toast]);
 
   useEffect(() => {

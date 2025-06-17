@@ -484,6 +484,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_delivery_order: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       add_to_cart: {
         Args: {
           p_customer_id: string
@@ -499,6 +503,10 @@ export type Database = {
       clear_cart: {
         Args: { user_id: string }
         Returns: undefined
+      }
+      complete_delivery_order: {
+        Args: { p_order_id: string }
+        Returns: Json
       }
       create_orders_from_cart: {
         Args:
@@ -568,6 +576,10 @@ export type Database = {
       }
       update_cart_quantity: {
         Args: { cart_item_id: string; new_quantity: number }
+        Returns: undefined
+      }
+      update_delivery_partner_location: {
+        Args: { p_latitude: number; p_longitude: number }
         Returns: undefined
       }
     }

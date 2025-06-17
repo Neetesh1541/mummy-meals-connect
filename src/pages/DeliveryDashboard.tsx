@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -133,24 +134,15 @@ export default function DeliveryDashboard() {
     if (!user) return;
     setUpdatingOrder(orderId);
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .update({ delivery_partner_id: user.id, status: 'picked_up' })
-        .eq('id', orderId)
-        .eq('status', 'ready')
-        .is('delivery_partner_id', null)
-        .select();
+      const { data, error } = await supabase.rpc('accept_delivery_order', {
+        p_order_id: orderId
+      });
 
-      if (error) {
-        // Handle postgres-level errors, e.g. from the trigger
-        throw error;
-      }
+      if (error) throw error;
       
-      if (!data || data.length === 0) {
-        // This is our race condition. The order is no longer available.
-        const raceConditionError = new Error("This order is no longer available. It may have been accepted by another driver.");
-        raceConditionError.name = "RaceConditionError";
-        throw raceConditionError;
+      if (!data?.success) {
+        const errorMessage = data?.error || "Failed to accept the order.";
+        throw new Error(errorMessage);
       }
 
       toast({
@@ -162,7 +154,7 @@ export default function DeliveryDashboard() {
       console.error("Error accepting order:", error);
       
       // If it was our race condition, we refresh the list.
-      if (error.name === "RaceConditionError") {
+      if (error.message.includes("no longer available")) {
         fetchOrders(); // Refresh the list to remove the stale order
       }
 
@@ -180,20 +172,15 @@ export default function DeliveryDashboard() {
     if (!user) return;
     setUpdatingOrder(orderId);
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .update({ status: 'delivered' })
-        .eq('id', orderId)
-        .eq('delivery_partner_id', user.id)
-        .eq('status', 'picked_up')
-        .select();
+      const { data, error } = await supabase.rpc('complete_delivery_order', {
+        p_order_id: orderId
+      });
 
       if (error) throw error;
       
-      if (!data || data.length === 0) {
-        const raceConditionError = new Error("Could not complete this order. Its status may have changed.");
-        raceConditionError.name = "RaceConditionError";
-        throw raceConditionError;
+      if (!data?.success) {
+        const errorMessage = data?.error || "Failed to complete the order.";
+        throw new Error(errorMessage);
       }
 
       toast({
@@ -204,7 +191,7 @@ export default function DeliveryDashboard() {
     } catch (error: any) {
       console.error("Error completing order:", error);
 
-      if (error.name === "RaceConditionError") {
+      if (error.message.includes("cannot be completed")) {
         fetchOrders();
       }
       
