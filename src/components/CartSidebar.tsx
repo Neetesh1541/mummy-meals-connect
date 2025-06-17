@@ -23,12 +23,35 @@ interface CartItemWithMenu {
   };
 }
 
+interface CartItemRaw {
+  id: string;
+  quantity: number;
+  menu_id: string;
+  menu: any; // Json type from Supabase
+}
+
 export function CartSidebar() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [cartItems, setCartItems] = useState<CartItemWithMenu[]>([]);
   const [loading, setLoading] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+
+  const transformCartData = (rawData: CartItemRaw[]): CartItemWithMenu[] => {
+    return rawData.map(item => ({
+      id: item.id,
+      quantity: item.quantity,
+      menu_id: item.menu_id,
+      menu: {
+        title: item.menu?.title || 'Unknown Item',
+        price: Number(item.menu?.price) || 0,
+        mom_id: item.menu?.mom_id || '',
+        users: {
+          full_name: item.menu?.users?.full_name || 'Mom'
+        }
+      }
+    }));
+  };
 
   const fetchCartItems = useCallback(async () => {
     if (!user) {
@@ -53,7 +76,8 @@ export function CartSidebar() {
       }
       
       console.log('Cart items fetched:', data);
-      setCartItems(data || []);
+      const transformedData = transformCartData(data || []);
+      setCartItems(transformedData);
     } catch (error) {
       console.error('Error fetching cart:', error);
       toast({
