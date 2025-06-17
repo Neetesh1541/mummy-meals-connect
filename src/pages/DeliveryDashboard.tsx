@@ -14,6 +14,13 @@ import { StatCard } from "@/components/delivery/StatCard";
 import { DollarSign, Truck } from "lucide-react";
 import { LocationSharer } from "@/components/delivery/LocationSharer";
 
+// Type for the RPC function responses
+type DeliveryOrderResponse = {
+  success: boolean;
+  error?: string;
+  order_id?: string;
+};
+
 export default function DeliveryDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -140,8 +147,11 @@ export default function DeliveryDashboard() {
 
       if (error) throw error;
       
-      if (!data?.success) {
-        const errorMessage = data?.error || "Failed to accept the order.";
+      // Type assertion to properly handle the response
+      const response = data as DeliveryOrderResponse;
+      
+      if (!response?.success) {
+        const errorMessage = response?.error || "Failed to accept the order.";
         throw new Error(errorMessage);
       }
 
@@ -178,8 +188,11 @@ export default function DeliveryDashboard() {
 
       if (error) throw error;
       
-      if (!data?.success) {
-        const errorMessage = data?.error || "Failed to complete the order.";
+      // Type assertion to properly handle the response
+      const response = data as DeliveryOrderResponse;
+      
+      if (!response?.success) {
+        const errorMessage = response?.error || "Failed to complete the order.";
         throw new Error(errorMessage);
       }
 
