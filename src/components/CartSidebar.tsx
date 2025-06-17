@@ -31,7 +31,11 @@ export function CartSidebar() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const fetchCartItems = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setCartItems([]);
+      return;
+    }
+    
     try {
       const { data, error } = await supabase.rpc('get_cart_items', {
         user_id: user.id,
@@ -39,21 +43,32 @@ export function CartSidebar() {
 
       if (error) {
         console.error('Error fetching cart:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch cart items",
+          variant: "destructive",
+        });
         return;
       }
       
       setCartItems((data as any) || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch cart items",
+        variant: "destructive",
+      });
     }
-  }, [user]);
+  }, [user, toast]);
 
   useEffect(() => {
     if (user) {
       fetchCartItems();
 
+      // Set up real-time subscription for cart changes
       const channel = supabase
-        .channel(`cart-sidebar-realtime-${user.id}`)
+        .channel(`cart-realtime-${user.id}`)
         .on(
           'postgres_changes',
           {
@@ -62,27 +77,33 @@ export function CartSidebar() {
             table: 'cart',
             filter: `customer_id=eq.${user.id}`,
           },
-          () => {
-            console.log('CartSidebar: change received on cart table!');
-            fetchCartItems();
+          (payload) => {
+            console.log('CartSidebar: Cart change received!', payload);
+            fetchCartItems(); // Refresh cart items when changes occur
           }
         )
         .subscribe((status, err) => {
           if (status === 'SUBSCRIBED') {
-            console.log(`Successfully subscribed to cart for user ${user.id}`);
+            console.log(`Successfully subscribed to cart changes for user ${user.id}`);
           }
           if (status === 'CHANNEL_ERROR') {
             console.error(`Subscription error for cart user ${user.id}:`, err);
+            toast({
+              title: "Connection Error",
+              description: "Could not connect to real-time updates. Please refresh the page.",
+              variant: "destructive"
+            });
           }
         });
 
       return () => {
+        console.log(`Cleaning up cart subscription for user ${user.id}`);
         supabase.removeChannel(channel);
       };
     } else {
       setCartItems([]);
     }
-  }, [user, fetchCartItems]);
+  }, [user, fetchCartItems, toast]);
 
   const updateQuantity = async (cartItemId: string, newQuantity: number) => {
     try {
@@ -99,12 +120,13 @@ export function CartSidebar() {
         if (error) throw error;
       }
       
-      fetchCartItems();
-    } catch (error) {
+      // Real-time will handle the update, but we can also manually refresh as fallback
+      setTimeout(() => fetchCartItems(), 100);
+    } catch (error: any) {
       console.error('Error updating cart:', error);
       toast({
         title: "Error",
-        description: "Failed to update cart",
+        description: error?.message || "Failed to update cart",
         variant: "destructive",
       });
     }
@@ -124,11 +146,11 @@ export function CartSidebar() {
         title: "Cart cleared",
         description: "All items removed from cart",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error clearing cart:', error);
       toast({
         title: "Error",
-        description: "Failed to clear cart",
+        description: error?.message || "Failed to clear cart",
         variant: "destructive",
       });
     }
@@ -157,7 +179,7 @@ export function CartSidebar() {
         
         if (error) throw error;
 
-        if (data.url) {
+        if (data?.url) {
           window.location.href = data.url;
         } else {
           toast({
@@ -188,7 +210,7 @@ export function CartSidebar() {
       console.error('Error during checkout:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to process order",
+        description: error?.message || "Failed to process order",
         variant: "destructive",
       });
     } finally {
@@ -196,8 +218,13 @@ export function CartSidebar() {
     }
   };
 
-  const totalAmount = cartItems.reduce((sum, item) => sum + (item.menu.price * item.quantity), 0);
-  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalAmount = cartItems.reduce((sum, item) => {
+    const price = item.menu?.price || 0;
+    const quantity = item.quantity || 0;
+    return sum + (price * quantity);
+  }, 0);
+  
+  const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
   return (
     <div className="w-96 bg-white dark:bg-gray-800 border-l p-6 overflow-y-auto">
@@ -224,14 +251,14 @@ export function CartSidebar() {
           {cartItems.map((item) => (
             <div key={item.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
               <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium">{item.menu.title}</h4>
+                <h4 className="font-medium">{item.menu?.title || 'Unknown Item'}</h4>
                 <Badge variant="secondary" className="text-xs">
-                  {item.menu.users?.full_name || 'Mom'}
+                  {item.menu?.users?.full_name || 'Mom'}
                 </Badge>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-green-600 font-semibold">₹{item.menu.price}</span>
+                <span className="text-green-600 font-semibold">₹{item.menu?.price || 0}</span>
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
@@ -253,7 +280,7 @@ export function CartSidebar() {
               
               <div className="text-right mt-2">
                 <span className="text-sm font-semibold">
-                  Total: ₹{(item.menu.price * item.quantity).toFixed(2)}
+                  Total: ₹{((item.menu?.price || 0) * item.quantity).toFixed(2)}
                 </span>
               </div>
             </div>
