@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -187,21 +186,21 @@ export function CartSidebar() {
     if (!user) return;
     setLoading(true);
     try {
-      const shipping_details = {
-        name: address.fullName,
-        phone: address.phone,
-        address: {
-          line1: address.street,
-          city: address.city,
-          state: address.state,
-          postal_code: address.zip,
-          country: 'IN',
-        },
-      };
-
-      console.log('Processing checkout with:', { paymentMethod, shipping_details });
+      console.log('Processing checkout with:', { paymentMethod, address });
 
       if (paymentMethod === 'stripe') {
+        const shipping_details = {
+          name: address.fullName,
+          phone: address.phone,
+          address: {
+            line1: address.street,
+            city: address.city,
+            state: address.state,
+            postal_code: address.zip,
+            country: 'IN',
+          },
+        };
+
         const { data, error } = await supabase.functions.invoke('create-checkout-session', {
           body: { shipping_details }
         });
@@ -218,6 +217,25 @@ export function CartSidebar() {
           });
         }
       } else { // Cash on Delivery
+        const shipping_details = {
+          name: address.fullName,
+          phone: address.phone,
+          address: {
+            line1: address.street,
+            city: address.city,
+            state: address.state,
+            postal_code: address.zip,
+            country: 'IN',
+          },
+        };
+
+        console.log('Creating COD order with details:', {
+          p_customer_id: user.id,
+          p_shipping_details: shipping_details,
+          p_customer_phone: address.phone,
+          p_payment_method: 'cod'
+        });
+
         const { error } = await supabase.rpc('create_orders_from_cart', {
             p_customer_id: user.id,
             p_shipping_details: shipping_details,
@@ -226,9 +244,11 @@ export function CartSidebar() {
         });
 
         if (error) {
+          console.error('COD order creation error:', error);
           throw new Error(`Failed to create order: ${error.message}`);
         }
         
+        console.log('COD order created successfully');
         toast({
           title: "Order Placed!",
           description: "Your order has been placed successfully. You can track it in your dashboard.",
