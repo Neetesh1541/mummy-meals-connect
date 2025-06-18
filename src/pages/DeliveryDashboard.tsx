@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -139,7 +138,7 @@ export default function DeliveryDashboard() {
               const oldData = payload.old as any;
               
               // If order becomes ready and available
-              if (newData.status === 'ready' && !newData.delivery_partner_id) {
+              if (newData.status === 'ready' && !newData.delivery_partner_id && oldData.status !== 'ready') {
                 toast({
                   title: "New Delivery Available!",
                   description: "A new order is ready for pickup.",
@@ -185,23 +184,34 @@ export default function DeliveryDashboard() {
     try {
       console.log('Accepting order:', orderId);
       
-      const { data, error } = await supabase.rpc('accept_delivery_order', {
-        p_order_id: orderId
-      });
+      // Use direct update instead of RPC for better error handling
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ 
+          delivery_partner_id: user.id,
+          status: 'picked_up'
+        })
+        .eq('id', orderId)
+        .eq('status', 'ready')
+        .is('delivery_partner_id', null)
+        .select()
+        .single();
 
       if (error) {
-        console.error('RPC error:', error);
-        throw error;
-      }
-      
-      const response = data as DeliveryOrderResponse;
-      
-      if (!response?.success) {
-        const errorMessage = response?.error || "Failed to accept the order.";
-        throw new Error(errorMessage);
+        console.error('Error accepting order:', error);
+        if (error.code === 'PGRST116') {
+          toast({
+            title: "Order No Longer Available",
+            description: "This order was already accepted by another delivery partner.",
+            variant: "destructive"
+          });
+        } else {
+          throw error;
+        }
+        return;
       }
 
-      console.log('Order accepted successfully');
+      console.log('Order accepted successfully:', data);
       toast({
         title: "Order Accepted",
         description: "You have accepted the order. It's now in your deliveries.",
@@ -211,21 +221,11 @@ export default function DeliveryDashboard() {
       fetchOrders();
     } catch (error: any) {
       console.error("Error accepting order:", error);
-      
-      if (error.message.includes("no longer available") || error.message.includes("already assigned")) {
-        fetchOrders();
-        toast({
-          title: "Order No Longer Available",
-          description: "This order was already accepted by another delivery partner.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Error Accepting Order",
-          description: error.message || "Failed to accept the order. Please try again.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error Accepting Order",
+        description: error.message || "Failed to accept the order. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setUpdatingOrder(null);
     }
@@ -237,23 +237,30 @@ export default function DeliveryDashboard() {
     try {
       console.log('Completing order:', orderId);
       
-      const { data, error } = await supabase.rpc('complete_delivery_order', {
-        p_order_id: orderId
-      });
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status: 'delivered' })
+        .eq('id', orderId)
+        .eq('delivery_partner_id', user.id)
+        .eq('status', 'picked_up')
+        .select()
+        .single();
 
       if (error) {
-        console.error('RPC error:', error);
-        throw error;
-      }
-      
-      const response = data as DeliveryOrderResponse;
-      
-      if (!response?.success) {
-        const errorMessage = response?.error || "Failed to complete the order.";
-        throw new Error(errorMessage);
+        console.error('Error completing order:', error);
+        if (error.code === 'PGRST116') {
+          toast({
+            title: "Order Cannot Be Completed",
+            description: "This order is not available for completion.",
+            variant: "destructive"
+          });
+        } else {
+          throw error;
+        }
+        return;
       }
 
-      console.log('Order completed successfully');
+      console.log('Order completed successfully:', data);
       toast({
         title: "Order Completed",
         description: "You have successfully delivered the order!",
@@ -263,21 +270,11 @@ export default function DeliveryDashboard() {
       fetchOrders();
     } catch (error: any) {
       console.error("Error completing order:", error);
-
-      if (error.message.includes("cannot be completed")) {
-        fetchOrders();
-        toast({
-          title: "Order Cannot Be Completed",
-          description: "This order is not available for completion.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Error Completing Order",
-          description: error.message || "Failed to complete the order. Please try again.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Error Completing Order",
+        description: error.message || "Failed to complete the order. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setUpdatingOrder(null);
     }
