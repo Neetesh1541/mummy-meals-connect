@@ -14,7 +14,6 @@ import { StatCard } from "@/components/delivery/StatCard";
 import { DollarSign, Truck } from "lucide-react";
 import { LocationSharer } from "@/components/delivery/LocationSharer";
 
-// Type for the RPC function responses
 type DeliveryOrderResponse = {
   success: boolean;
   error?: string;
@@ -32,9 +31,10 @@ export default function DeliveryDashboard() {
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
-    console.log("DeliveryDashboard: Fetching orders...");
+    console.log("DeliveryDashboard: Fetching orders for user:", user.id);
     setLoading(true);
     try {
+      // Fetch available orders (ready for pickup, no delivery partner assigned)
       const { data: available, error: availableError } = await supabase
         .from('orders')
         .select(`
@@ -43,18 +43,24 @@ export default function DeliveryDashboard() {
           created_at,
           quantity,
           delivery_fee,
-          menu (title),
           shipping_details,
+          menu (title),
           customer:users!orders_customer_id_fkey (full_name, phone),
           mom:users!orders_mom_id_fkey (full_name, phone, address)
         `)
         .eq('status', 'ready')
-        .is('delivery_partner_id', null);
+        .is('delivery_partner_id', null)
+        .order('created_at', { ascending: true });
 
-      if (availableError) throw availableError;
-      console.log('Available orders fetched:', available);
+      if (availableError) {
+        console.error('Error fetching available orders:', availableError);
+        throw availableError;
+      }
+      
+      console.log('Available orders fetched:', available?.length || 0);
       setAvailableOrders(available || []);
 
+      // Fetch my orders (assigned to this delivery partner)
       const { data: mine, error: mineError } = await supabase
         .from('orders')
         .select(`
@@ -63,15 +69,20 @@ export default function DeliveryDashboard() {
           created_at,
           quantity,
           delivery_fee,
-          menu (title),
           shipping_details,
+          menu (title),
           customer:users!orders_customer_id_fkey (full_name, phone),
           mom:users!orders_mom_id_fkey (full_name, phone, address)
         `)
-        .eq('delivery_partner_id', user.id);
+        .eq('delivery_partner_id', user.id)
+        .order('created_at', { ascending: false });
 
-      if (mineError) throw mineError;
+      if (mineError) {
+        console.error('Error fetching my orders:', mineError);
+        throw mineError;
+      }
       
+      // Sort orders: picked_up first, then delivered
       const statusOrder: { [key: string]: number } = { 'picked_up': 1, 'delivered': 2 };
       const sortedMine = (mine || []).sort((a, b) => {
         const aVal = statusOrder[a.status] || 99;
@@ -81,9 +92,11 @@ export default function DeliveryDashboard() {
         }
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
-      console.log('My orders fetched:', sortedMine);
+      
+      console.log('My orders fetched:', sortedMine?.length || 0);
       setMyOrders(sortedMine);
 
+      // Calculate stats
       const completed = mine?.filter(o => o.status === 'delivered') || [];
       const earnings = completed.reduce((acc, order) => acc + (order.delivery_fee || 0), 0);
       setStats({
@@ -95,7 +108,7 @@ export default function DeliveryDashboard() {
       console.error("Error fetching orders:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch orders.",
+        description: "Failed to fetch orders. Please check your connection.",
         variant: "destructive"
       });
     } finally {
@@ -107,14 +120,41 @@ export default function DeliveryDashboard() {
     if (user) {
       fetchOrders();
       
-      // Subscribe to all orders changes for delivery partners
+      // Subscribe to all orders changes for real-time updates
       const channel = supabase
-        .channel('delivery-orders-realtime')
+        .channel(`delivery-dashboard-${user.id}`)
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'orders'
+          },
           (payload) => {
             console.log('DeliveryDashboard: Order change detected:', payload);
+            
+            // Show toast for relevant updates
+            if (payload.eventType === 'UPDATE') {
+              const newData = payload.new as any;
+              const oldData = payload.old as any;
+              
+              // If order becomes ready and available
+              if (newData.status === 'ready' && !newData.delivery_partner_id) {
+                toast({
+                  title: "New Delivery Available!",
+                  description: "A new order is ready for pickup.",
+                });
+              }
+              
+              // If order gets assigned to someone else
+              if (oldData.status === 'ready' && newData.status === 'picked_up' && newData.delivery_partner_id !== user.id) {
+                toast({
+                  title: "Order Taken",
+                  description: "An available order was picked up by another delivery partner.",
+                });
+              }
+            }
+            
             fetchOrders();
           }
         )
@@ -144,13 +184,16 @@ export default function DeliveryDashboard() {
     setUpdatingOrder(orderId);
     try {
       console.log('Accepting order:', orderId);
+      
       const { data, error } = await supabase.rpc('accept_delivery_order', {
         p_order_id: orderId
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC error:', error);
+        throw error;
+      }
       
-      // Type assertion to properly handle the response
       const response = data as DeliveryOrderResponse;
       
       if (!response?.success) {
@@ -163,19 +206,26 @@ export default function DeliveryDashboard() {
         title: "Order Accepted",
         description: "You have accepted the order. It's now in your deliveries.",
       });
+      
+      // Refresh orders immediately
+      fetchOrders();
     } catch (error: any) {
       console.error("Error accepting order:", error);
       
-      // If it was our race condition, we refresh the list.
-      if (error.message.includes("no longer available")) {
-        fetchOrders(); // Refresh the list to remove the stale order
+      if (error.message.includes("no longer available") || error.message.includes("already assigned")) {
+        fetchOrders();
+        toast({
+          title: "Order No Longer Available",
+          description: "This order was already accepted by another delivery partner.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error Accepting Order",
+          description: error.message || "Failed to accept the order. Please try again.",
+          variant: "destructive"
+        });
       }
-
-      toast({
-        title: "Error Accepting Order",
-        description: error.message || "Failed to accept the order.",
-        variant: "destructive"
-      });
     } finally {
       setUpdatingOrder(null);
     }
@@ -186,13 +236,16 @@ export default function DeliveryDashboard() {
     setUpdatingOrder(orderId);
     try {
       console.log('Completing order:', orderId);
+      
       const { data, error } = await supabase.rpc('complete_delivery_order', {
         p_order_id: orderId
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC error:', error);
+        throw error;
+      }
       
-      // Type assertion to properly handle the response
       const response = data as DeliveryOrderResponse;
       
       if (!response?.success) {
@@ -203,27 +256,47 @@ export default function DeliveryDashboard() {
       console.log('Order completed successfully');
       toast({
         title: "Order Completed",
-        description: "You have completed the order.",
+        description: "You have successfully delivered the order!",
       });
+      
+      // Refresh orders immediately
+      fetchOrders();
     } catch (error: any) {
       console.error("Error completing order:", error);
 
       if (error.message.includes("cannot be completed")) {
         fetchOrders();
+        toast({
+          title: "Order Cannot Be Completed",
+          description: "This order is not available for completion.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error Completing Order",
+          description: error.message || "Failed to complete the order. Please try again.",
+          variant: "destructive"
+        });
       }
-      
-      toast({
-        title: "Error Completing Order",
-        description: error.message || "Failed to complete the order. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setUpdatingOrder(null);
     }
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading deliveries...</div>;
+    return (
+      <div className="min-h-screen bg-background relative">
+        <WavyBackground />
+        <Header />
+        <main className="container py-8 relative z-10">
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading deliveries...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   return (
@@ -262,8 +335,12 @@ export default function DeliveryDashboard() {
 
           <Tabs defaultValue="available" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="available">Available Deliveries</TabsTrigger>
-              <TabsTrigger value="mine">My Deliveries</TabsTrigger>
+              <TabsTrigger value="available">
+                Available Deliveries ({availableOrders.length})
+              </TabsTrigger>
+              <TabsTrigger value="mine">
+                My Deliveries ({myOrders.length})
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="available">
               <AvailableDeliveriesTab

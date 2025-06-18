@@ -1,3 +1,4 @@
+
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MenuManagement } from "@/components/MenuManagement";
@@ -15,17 +16,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types/order";
 import { getStatusClassNames } from "@/lib/status-colors";
-
-const getStatusColorForMom = (status: string) => {
-  switch (status) {
-    case 'placed': return 'bg-yellow-400';
-    case 'preparing': return 'bg-orange-400';
-    case 'ready': return 'bg-blue-400';
-    case 'picked_up': return 'bg-indigo-400';
-    case 'delivered': return 'bg-green-500';
-    default: return 'bg-gray-300';
-  }
-};
 
 export default function MomDashboard() {
   const { user } = useAuth();
@@ -45,6 +35,8 @@ export default function MomDashboard() {
     if (user) {
       fetchOrders();
       fetchStats();
+      
+      // Set up real-time subscription for orders
       const channel = supabase
         .channel(`mom-dashboard-orders-${user.id}`)
         .on(
@@ -55,10 +47,23 @@ export default function MomDashboard() {
             table: 'orders',
             filter: `mom_id=eq.${user.id}`,
           },
-          () => {
-            console.log('MomDashboard: Change received on orders table!');
+          (payload) => {
+            console.log('MomDashboard: Order change received!', payload);
             fetchOrders();
             fetchStats();
+            
+            // Show toast for order updates
+            if (payload.eventType === 'UPDATE') {
+              toast({
+                title: "Order Updated",
+                description: "An order status has been updated.",
+              });
+            } else if (payload.eventType === 'INSERT') {
+              toast({
+                title: "New Order!",
+                description: "You have received a new order.",
+              });
+            }
           }
         )
         .subscribe((status, err) => {
@@ -67,18 +72,25 @@ export default function MomDashboard() {
           }
           if (status === 'CHANNEL_ERROR') {
             console.error(`Subscription error for mom-dashboard user ${user.id}:`, err);
+            toast({
+              title: "Connection Error",
+              description: "Could not connect to real-time updates. Please refresh the page.",
+              variant: "destructive"
+            });
           }
         });
 
       return () => {
+        console.log('Cleaning up mom dashboard subscription');
         supabase.removeChannel(channel);
       };
     }
-  }, [user]);
+  }, [user, toast]);
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
     try {
+      console.log('Fetching orders for mom:', user.id);
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -89,6 +101,7 @@ export default function MomDashboard() {
           payment_method,
           quantity,
           delivery_partner_id,
+          shipping_details,
           menu!orders_menu_id_fkey(title),
           customer:users!orders_customer_id_fkey(full_name, phone, address),
           delivery_partner:users!orders_delivery_partner_id_fkey(full_name, phone)
@@ -96,12 +109,22 @@ export default function MomDashboard() {
         .eq('mom_id', user.id)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching orders:', error);
+        throw error;
+      }
+      
+      console.log('Orders fetched successfully:', data);
       setOrders(data as Order[] || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch orders. Please refresh the page.",
+        variant: "destructive",
+      });
     }
-  }, [user]);
+  }, [user, toast]);
 
   const fetchStats = useCallback(async () => {
     if (!user) return;
@@ -124,7 +147,7 @@ export default function MomDashboard() {
 
       setStats({
         totalOrders: orders.length,
-        activeOrders: orders.filter(order => ['placed', 'preparing', 'ready'].includes(order.status ?? '')).length,
+        activeOrders: orders.filter(order => ['placed', 'preparing', 'ready', 'picked_up'].includes(order.status ?? '')).length,
         totalRevenue: completedOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
         onlineRevenue,
         codRevenue,
@@ -138,21 +161,32 @@ export default function MomDashboard() {
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingOrderId(orderId);
     try {
+      console.log('Updating order status:', { orderId, newStatus });
+      
       const { error } = await supabase
         .from('orders')
         .update({ status: newStatus })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .eq('mom_id', user?.id); // Ensure only mom can update their orders
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating order status:', error);
+        throw error;
+      }
+      
+      console.log('Order status updated successfully');
       toast({
         title: "Status Updated",
-        description: `Order status successfully changed to ${newStatus}.`,
+        description: `Order status successfully changed to ${newStatus.replace('_', ' ')}.`,
       });
+      
+      // Refresh orders to get latest data
+      fetchOrders();
     } catch (error: any) {
       console.error('Error updating order status:', error);
       toast({
         title: "Update Failed",
-        description: error.message,
+        description: error.message || "Failed to update order status. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -171,16 +205,67 @@ export default function MomDashboard() {
 
     switch (order.status) {
       case 'placed':
-        return <Button size="sm" className="w-full mt-2" onClick={() => updateOrderStatus(order.id, 'preparing')} disabled={isUpdating}>{isUpdating ? "Updating..." : "Start Preparing"}</Button>;
+        return (
+          <Button 
+            size="sm" 
+            className="w-full mt-2" 
+            onClick={() => updateOrderStatus(order.id, 'preparing')} 
+            disabled={isUpdating}
+          >
+            {isUpdating ? "Updating..." : "Start Preparing"}
+          </Button>
+        );
       case 'preparing':
-        return <Button size="sm" className="w-full mt-2" onClick={() => updateOrderStatus(order.id, 'ready')} disabled={isUpdating}>{isUpdating ? "Updating..." : "Mark as Ready for Pickup"}</Button>;
+        return (
+          <Button 
+            size="sm" 
+            className="w-full mt-2" 
+            onClick={() => updateOrderStatus(order.id, 'ready')} 
+            disabled={isUpdating}
+          >
+            {isUpdating ? "Updating..." : "Mark as Ready for Pickup"}
+          </Button>
+        );
+      case 'ready':
+        return (
+          <div className="text-center mt-2">
+            <Badge className={`capitalize ${getStatusClassNames(order.status).badge}`}>
+              Waiting for Delivery Partner
+            </Badge>
+            <p className="text-xs text-muted-foreground mt-1">
+              Order is ready and waiting to be picked up by a delivery partner
+            </p>
+          </div>
+        );
+      case 'picked_up':
+        return (
+          <div className="text-center mt-2">
+            <Badge className={`capitalize ${getStatusClassNames(order.status).badge}`}>
+              Out for Delivery
+            </Badge>
+            <p className="text-xs text-muted-foreground mt-1">
+              Order is being delivered by {order.delivery_partner?.full_name || 'delivery partner'}
+            </p>
+          </div>
+        );
+      case 'delivered':
+        return (
+          <div className="text-center mt-2">
+            <Badge className={`capitalize ${getStatusClassNames(order.status).badge}`}>
+              Delivered
+            </Badge>
+            <p className="text-xs text-muted-foreground mt-1">
+              Order completed successfully
+            </p>
+          </div>
+        );
       default:
         return (
-            <div className="text-right mt-2">
-                <Badge className={`capitalize ${getStatusClassNames(order.status).badge}`}>
-                    {order.status.replace('_', ' ')}
-                </Badge>
-            </div>
+          <div className="text-center mt-2">
+            <Badge className={`capitalize ${getStatusClassNames(order.status).badge}`}>
+              {order.status.replace('_', ' ')}
+            </Badge>
+          </div>
         );
     }
   };
@@ -319,7 +404,7 @@ export default function MomDashboard() {
                                 <div className="pl-6 space-y-1">
                                     <p><strong>Name:</strong> {order.customer?.full_name}</p>
                                     <p className="flex items-start gap-2"><strong><Phone className="h-4 w-4 mt-0.5" />:</strong> <span>{order.customer?.phone || 'Not provided'}</span></p>
-                                    <p className="flex items-start gap-2"><strong><MapPin className="h-4 w-4 mt-0.5" />:</strong> <span>{formatAddress(order.customer?.address)}</span></p>
+                                    <p className="flex items-start gap-2"><strong><MapPin className="h-4 w-4 mt-0.5" />:</strong> <span>{formatAddress(order.shipping_details?.address)}</span></p>
                                 </div>
                             </div>
 

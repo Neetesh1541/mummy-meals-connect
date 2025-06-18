@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ export function OrderTracking() {
   const fetchOrders = useCallback(async () => {
     if (!user) return;
     try {
+      console.log('OrderTracking: Fetching orders for customer:', user.id);
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -41,6 +43,7 @@ export function OrderTracking() {
           estimated_delivery_at,
           delivery_partner_id,
           payment_method,
+          shipping_details,
           menu!orders_menu_id_fkey(title, price),
           mom:users!orders_mom_id_fkey(full_name, phone, address),
           delivery_partner:users!orders_delivery_partner_id_fkey(full_name, phone)
@@ -48,16 +51,28 @@ export function OrderTracking() {
         .eq('customer_id', user?.id)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching orders:', error);
+        throw error;
+      }
+      
+      console.log('OrderTracking: Orders fetched successfully:', data?.length || 0);
       setOrders(data as Order[] || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch orders. Please refresh the page.",
+        variant: "destructive",
+      });
     }
-  }, [user]);
+  }, [user, toast]);
 
   useEffect(() => {
     if (user) {
       fetchOrders();
+      
+      // Set up real-time subscription for customer's orders
       const channel = supabase
         .channel(`order-tracking-${user.id}`)
         .on(
@@ -69,11 +84,46 @@ export function OrderTracking() {
             filter: `customer_id=eq.${user.id}`,
           },
           (payload) => {
-            console.log('OrderTracking: Change received on orders table!', payload);
-            toast({
-              title: "Order Update",
-              description: "Your order details have been updated.",
-            });
+            console.log('OrderTracking: Order change received!', payload);
+            
+            // Show meaningful toast messages for different status changes
+            if (payload.eventType === 'UPDATE') {
+              const newData = payload.new as any;
+              const oldData = payload.old as any;
+              
+              if (newData.status !== oldData.status) {
+                let message = "Your order has been updated.";
+                
+                switch (newData.status) {
+                  case 'preparing':
+                    message = "Your order is being prepared!";
+                    break;
+                  case 'ready':
+                    message = "Your order is ready for pickup!";
+                    break;
+                  case 'picked_up':
+                    message = "Your order is out for delivery!";
+                    break;
+                  case 'delivered':
+                    message = "Your order has been delivered!";
+                    break;
+                }
+                
+                toast({
+                  title: "Order Update",
+                  description: message,
+                });
+              }
+              
+              // If delivery partner was assigned
+              if (!oldData.delivery_partner_id && newData.delivery_partner_id) {
+                toast({
+                  title: "Delivery Partner Assigned",
+                  description: "A delivery partner has been assigned to your order.",
+                });
+              }
+            }
+            
             fetchOrders();
           }
         )
@@ -92,6 +142,7 @@ export function OrderTracking() {
         });
 
       return () => {
+        console.log('Cleaning up order tracking subscription');
         supabase.removeChannel(channel);
       };
     }
