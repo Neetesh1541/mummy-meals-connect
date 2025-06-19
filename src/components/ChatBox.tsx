@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,7 +14,7 @@ interface Message {
   content: string;
   created_at: string;
   users: {
-    full_name: string;
+    full_name: string | null;
   } | null;
 }
 

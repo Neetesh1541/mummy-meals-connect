@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -72,8 +71,30 @@ export default function DeliveryDashboard() {
         throw availableError;
       }
       
-      console.log('Available orders fetched:', available?.length || 0, available);
-      setAvailableOrders(available || []);
+      // Transform and validate available orders
+      const validAvailableOrders = available?.filter(order => 
+        order.status && order.created_at && order.menu?.title
+      ).map(order => ({
+        id: order.id,
+        status: order.status!,
+        created_at: order.created_at!,
+        quantity: order.quantity || 1,
+        delivery_fee: order.delivery_fee || 40,
+        shipping_details: order.shipping_details,
+        menu: { title: order.menu!.title! },
+        customer: order.customer ? {
+          full_name: order.customer.full_name || 'Customer',
+          phone: order.customer.phone
+        } : undefined,
+        mom: order.mom ? {
+          full_name: order.mom.full_name || 'Chef',
+          phone: order.mom.phone,
+          address: order.mom.address
+        } : undefined
+      })) || [];
+      
+      console.log('Available orders fetched:', validAvailableOrders.length, validAvailableOrders);
+      setAvailableOrders(validAvailableOrders);
 
       // Fetch my orders (assigned to this delivery partner)
       const { data: mine, error: mineError } = await supabase
@@ -98,9 +119,31 @@ export default function DeliveryDashboard() {
         throw mineError;
       }
       
+      // Transform and validate my orders
+      const validMyOrders = mine?.filter(order => 
+        order.status && order.created_at && order.menu?.title
+      ).map(order => ({
+        id: order.id,
+        status: order.status!,
+        created_at: order.created_at!,
+        quantity: order.quantity || 1,
+        delivery_fee: order.delivery_fee || 40,
+        shipping_details: order.shipping_details,
+        menu: { title: order.menu!.title! },
+        customer: order.customer ? {
+          full_name: order.customer.full_name || 'Customer',
+          phone: order.customer.phone
+        } : undefined,
+        mom: order.mom ? {
+          full_name: order.mom.full_name || 'Chef',
+          phone: order.mom.phone,
+          address: order.mom.address
+        } : undefined
+      })) || [];
+      
       // Sort orders: picked_up first, then delivered
       const statusOrder: { [key: string]: number } = { 'picked_up': 1, 'delivered': 2 };
-      const sortedMine = (mine || []).sort((a, b) => {
+      const sortedMine = validMyOrders.sort((a, b) => {
         const aVal = statusOrder[a.status] || 99;
         const bVal = statusOrder[b.status] || 99;
         if (aVal !== bVal) {
@@ -109,11 +152,11 @@ export default function DeliveryDashboard() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
       
-      console.log('My orders fetched:', sortedMine?.length || 0, sortedMine);
+      console.log('My orders fetched:', sortedMine.length, sortedMine);
       setMyOrders(sortedMine);
 
       // Calculate stats
-      const completed = mine?.filter(o => o.status === 'delivered') || [];
+      const completed = validMyOrders.filter(o => o.status === 'delivered') || [];
       const earnings = completed.reduce((acc, order) => acc + (order.delivery_fee || 0), 0);
       setStats({
         totalEarnings: earnings,

@@ -12,10 +12,10 @@ interface DeliveredOrder {
   id: string;
   menu: {
     title: string;
-  };
+  } | null;
   mom: {
     full_name: string;
-  };
+  } | null;
   created_at: string;
 }
 
@@ -48,7 +48,18 @@ export function FeedbackForm() {
         .eq('status', 'delivered');
       
       if (error) throw error;
-      setDeliveredOrders(data || []);
+      
+      // Filter and transform the data to ensure required fields exist
+      const validOrders = data?.filter(order => 
+        order.menu?.title && order.mom?.full_name && order.created_at
+      ).map(order => ({
+        id: order.id,
+        menu: { title: order.menu!.title! },
+        mom: { full_name: order.mom!.full_name! },
+        created_at: order.created_at!
+      })) || [];
+      
+      setDeliveredOrders(validOrders);
     } catch (error) {
       console.error('Error fetching delivered orders:', error);
     }
