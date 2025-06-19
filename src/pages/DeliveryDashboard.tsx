@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -13,12 +14,6 @@ import { StatCard } from "@/components/delivery/StatCard";
 import { DollarSign, Truck } from "lucide-react";
 import { LocationSharer } from "@/components/delivery/LocationSharer";
 
-type DeliveryOrderResponse = {
-  success: boolean;
-  error?: string;
-  order_id?: string;
-};
-
 export default function DeliveryDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -33,6 +28,27 @@ export default function DeliveryDashboard() {
     console.log("DeliveryDashboard: Fetching orders for user:", user.id);
     setLoading(true);
     try {
+      // First check if user has delivery role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'delivery')
+        .single();
+
+      if (roleError || !roleData) {
+        console.log('User does not have delivery role:', roleError);
+        toast({
+          title: "Access Denied",
+          description: "You need delivery partner permissions to access this dashboard.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log("User has delivery role, fetching orders...");
+
       // Fetch available orders (ready for pickup, no delivery partner assigned)
       const { data: available, error: availableError } = await supabase
         .from('orders')
@@ -56,7 +72,7 @@ export default function DeliveryDashboard() {
         throw availableError;
       }
       
-      console.log('Available orders fetched:', available?.length || 0);
+      console.log('Available orders fetched:', available?.length || 0, available);
       setAvailableOrders(available || []);
 
       // Fetch my orders (assigned to this delivery partner)
@@ -74,6 +90,7 @@ export default function DeliveryDashboard() {
           mom:users!orders_mom_id_fkey (full_name, phone, address)
         `)
         .eq('delivery_partner_id', user.id)
+        .in('status', ['picked_up', 'delivered'])
         .order('created_at', { ascending: false });
 
       if (mineError) {
@@ -92,7 +109,7 @@ export default function DeliveryDashboard() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
       
-      console.log('My orders fetched:', sortedMine?.length || 0);
+      console.log('My orders fetched:', sortedMine?.length || 0, sortedMine);
       setMyOrders(sortedMine);
 
       // Calculate stats
@@ -107,7 +124,7 @@ export default function DeliveryDashboard() {
       console.error("Error fetching orders:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch orders. Please check your connection.",
+        description: "Failed to fetch orders. Please check your connection and try again.",
         variant: "destructive"
       });
     } finally {
@@ -119,9 +136,9 @@ export default function DeliveryDashboard() {
     if (user) {
       fetchOrders();
       
-      // Subscribe to all orders changes for real-time updates
+      // Subscribe to ALL orders changes for real-time updates
       const channel = supabase
-        .channel(`delivery-dashboard-${user.id}`)
+        .channel(`delivery-dashboard-realtime-${user.id}`)
         .on(
           'postgres_changes',
           { 
@@ -130,18 +147,20 @@ export default function DeliveryDashboard() {
             table: 'orders'
           },
           (payload) => {
-            console.log('DeliveryDashboard: Order change detected:', payload);
+            console.log('DeliveryDashboard: Real-time order change detected:', payload);
+            
+            const eventType = payload.eventType;
+            const newData = payload.new as any;
+            const oldData = payload.old as any;
             
             // Show toast for relevant updates
-            if (payload.eventType === 'UPDATE') {
-              const newData = payload.new as any;
-              const oldData = payload.old as any;
-              
+            if (eventType === 'UPDATE' && newData && oldData) {
               // If order becomes ready and available
               if (newData.status === 'ready' && !newData.delivery_partner_id && oldData.status !== 'ready') {
+                console.log('New order available for pickup:', newData);
                 toast({
-                  title: "New Delivery Available!",
-                  description: "A new order is ready for pickup.",
+                  title: "🚚 New Delivery Available!",
+                  description: "A new order is ready for pickup. Check Available Deliveries tab.",
                 });
               }
               
@@ -154,6 +173,7 @@ export default function DeliveryDashboard() {
               }
             }
             
+            // Refresh orders immediately
             fetchOrders();
           }
         )
@@ -184,7 +204,7 @@ export default function DeliveryDashboard() {
     try {
       console.log('Accepting order:', orderId);
       
-      // Use direct update instead of RPC for better error handling
+      // Use direct update with proper conditions
       const { data, error } = await supabase
         .from('orders')
         .update({ 
@@ -213,7 +233,7 @@ export default function DeliveryDashboard() {
 
       console.log('Order accepted successfully:', data);
       toast({
-        title: "Order Accepted",
+        title: "✅ Order Accepted",
         description: "You have accepted the order. It's now in your deliveries.",
       });
       
@@ -262,7 +282,7 @@ export default function DeliveryDashboard() {
 
       console.log('Order completed successfully:', data);
       toast({
-        title: "Order Completed",
+        title: "🎉 Order Delivered",
         description: "You have successfully delivered the order!",
       });
       

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChatBox } from "@/components/ChatBox";
-import { User, Phone, MapPin, MessageSquare, Clock } from "lucide-react";
+import { User, Phone, MapPin, MessageSquare, Clock, CheckCircle } from "lucide-react";
 import { Order } from "@/types/order";
 import { getStatusClassNames } from "@/lib/status-colors";
 
@@ -38,11 +38,21 @@ export function OrderCard({ order, isMyOrder, onAccept, onComplete, updatingOrde
               {new Date(order.created_at).toLocaleDateString()} at {new Date(order.created_at).toLocaleTimeString()}
             </div>
           </div>
-          {isMyOrder && (
-            <Badge className={`capitalize ${getStatusClassNames(order.status).badge}`}>
-              {order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')}
-            </Badge>
-          )}
+          <Badge className={`capitalize ${getStatusClassNames(order.status).badge}`}>
+            {order.status === 'ready' ? (
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Ready for Pickup
+              </div>
+            ) : order.status === 'picked_up' ? (
+              <div className="flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" />
+                Out for Delivery
+              </div>
+            ) : (
+              order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')
+            )}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent>
@@ -118,22 +128,22 @@ export function OrderCard({ order, isMyOrder, onAccept, onComplete, updatingOrde
             
             {order.status === 'picked_up' && onComplete && (
               <Button 
-                className="w-full mt-4" 
+                className="w-full mt-4 bg-green-600 hover:bg-green-700" 
                 onClick={() => onComplete(order.id)} 
                 disabled={isUpdating}
               >
-                {isUpdating ? 'Delivering...' : 'Mark as Delivered'}
+                {isUpdating ? 'Delivering...' : '✅ Mark as Delivered'}
               </Button>
             )}
           </>
         ) : (
           onAccept && order.status === 'ready' && (
             <Button 
-              className="w-full mt-4" 
+              className="w-full mt-4 bg-blue-600 hover:bg-blue-700" 
               onClick={() => onAccept(order.id)} 
               disabled={isUpdating}
             >
-              {isUpdating ? 'Accepting...' : 'Accept Delivery'}
+              {isUpdating ? 'Accepting...' : '🚚 Accept Delivery'}
             </Button>
           )
         )}
