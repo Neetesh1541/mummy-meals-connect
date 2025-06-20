@@ -36,11 +36,13 @@ export default function Profile() {
   }, [user, navigate]);
 
   const fetchProfile = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', user?.id)
+        .eq('id', user.id)
         .single();
       
       if (error) throw error;
@@ -63,6 +65,8 @@ export default function Profile() {
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+    
     setLoading(true);
 
     try {
@@ -72,7 +76,7 @@ export default function Profile() {
           full_name: profile.fullName,
           phone: profile.phone
         })
-        .eq('id', user?.id);
+        .eq('id', user.id);
 
       if (error) throw error;
 

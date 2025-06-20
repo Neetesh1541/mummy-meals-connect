@@ -1,4 +1,3 @@
-
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MenuManagement } from "@/components/MenuManagement";
@@ -159,6 +158,8 @@ export default function MomDashboard() {
   }, [user]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    if (!user) return;
+    
     setUpdatingOrderId(orderId);
     try {
       console.log('Updating order status:', { orderId, newStatus });
@@ -167,7 +168,7 @@ export default function MomDashboard() {
         .from('orders')
         .update({ status: newStatus })
         .eq('id', orderId)
-        .eq('mom_id', user?.id); // Ensure only mom can update their orders
+        .eq('mom_id', user.id); // Ensure only mom can update their orders
       
       if (error) {
         console.error('Error updating order status:', error);
