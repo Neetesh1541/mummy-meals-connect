@@ -43,15 +43,31 @@ export function MenuManagement() {
   }, [user]);
 
   const fetchMenuItems = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('menu')
         .select('*')
-        .eq('mom_id', user?.id)
+        .eq('mom_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setMenuItems(data || []);
+      
+      // Transform and validate the data
+      const validMenuItems = data?.filter(item => 
+        item.title && item.description !== null && item.price !== null && item.available !== null
+      ).map(item => ({
+        id: item.id,
+        title: item.title!,
+        description: item.description || '',
+        price: item.price!,
+        available: item.available!,
+        created_at: item.created_at || new Date().toISOString(),
+        image_url: item.image_url
+      })) || [];
+      
+      setMenuItems(validMenuItems);
     } catch (error) {
       console.error('Error fetching menu items:', error);
       toast({
@@ -63,6 +79,8 @@ export function MenuManagement() {
   };
 
   const subscribeToMenuChanges = () => {
+    if (!user) return;
+    
     const channel = supabase
       .channel('menu-changes')
       .on(
@@ -71,7 +89,7 @@ export function MenuManagement() {
           event: '*',
           schema: 'public',
           table: 'menu',
-          filter: `mom_id=eq.${user?.id}`,
+          filter: `mom_id=eq.${user.id}`,
         },
         () => {
           fetchMenuItems();
@@ -87,11 +105,13 @@ export function MenuManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user) return;
+    
     try {
       let imageUrl = editingItem?.image_url || null;
 
       if (imageFile) {
-        const filePath = `${user?.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
+        const filePath = `${user.id}/${Date.now()}-${imageFile.name.replace(/\s/g, '_')}`;
         
         // If editing and there's a new file, upload it.
         // If there was an old file, we could delete it here, but for now we'll just upload the new one.
@@ -113,7 +133,7 @@ export function MenuManagement() {
         description: formData.description,
         price: parseFloat(formData.price),
         available: formData.available,
-        mom_id: user?.id,
+        mom_id: user.id,
         image_url: imageUrl,
       };
 

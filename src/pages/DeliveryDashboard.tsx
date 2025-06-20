@@ -84,11 +84,11 @@ export default function DeliveryDashboard() {
         menu: { title: order.menu!.title! },
         customer: order.customer ? {
           full_name: order.customer.full_name || 'Customer',
-          phone: order.customer.phone
+          phone: order.customer.phone || undefined
         } : undefined,
         mom: order.mom ? {
           full_name: order.mom.full_name || 'Chef',
-          phone: order.mom.phone,
+          phone: order.mom.phone || undefined,
           address: order.mom.address
         } : undefined
       })) || [];
@@ -132,11 +132,11 @@ export default function DeliveryDashboard() {
         menu: { title: order.menu!.title! },
         customer: order.customer ? {
           full_name: order.customer.full_name || 'Customer',
-          phone: order.customer.phone
+          phone: order.customer.phone || undefined
         } : undefined,
         mom: order.mom ? {
           full_name: order.mom.full_name || 'Chef',
-          phone: order.mom.phone,
+          phone: order.mom.phone || undefined,
           address: order.mom.address
         } : undefined
       })) || [];

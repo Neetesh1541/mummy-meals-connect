@@ -35,6 +35,8 @@ export function FeedbackForm() {
   }, [user]);
 
   const fetchDeliveredOrders = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('orders')
@@ -44,7 +46,7 @@ export function FeedbackForm() {
           menu!orders_menu_id_fkey(title),
           mom:users!orders_mom_id_fkey(full_name)
         `)
-        .eq('customer_id', user?.id || '')
+        .eq('customer_id', user.id)
         .eq('status', 'delivered');
       
       if (error) throw error;
@@ -82,7 +84,7 @@ export function FeedbackForm() {
         p_order_id: selectedOrder,
         p_customer_id: user.id,
         p_rating_value: rating,
-        p_comment_text: comment || null
+        p_comment_text: comment || undefined
       });
       
       if (error) throw error;
