@@ -12,10 +12,10 @@ interface DeliveredOrder {
   id: string;
   menu: {
     title: string;
-  } | null;
+  };
   mom: {
     full_name: string;
-  } | null;
+  };
   created_at: string;
 }
 
@@ -44,7 +44,7 @@ export function FeedbackForm() {
           menu!orders_menu_id_fkey(title),
           mom:users!orders_mom_id_fkey(full_name)
         `)
-        .eq('customer_id', user?.id)
+        .eq('customer_id', user?.id || '')
         .eq('status', 'delivered');
       
       if (error) throw error;

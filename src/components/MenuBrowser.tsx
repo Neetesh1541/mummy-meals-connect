@@ -93,11 +93,28 @@ export function MenuBrowser() {
       if (menuError) throw menuError;
       if (ratingsError) throw ratingsError;
 
-      setMenuItems(menuData || []);
+      // Transform and validate menu data
+      const validMenuItems = menuData?.filter(item => 
+        item.title && item.description !== null && item.price !== null && item.available !== null
+      ).map(item => ({
+        id: item.id,
+        title: item.title!,
+        description: item.description || '',
+        price: item.price!,
+        available: item.available!,
+        mom_id: item.mom_id!,
+        image_url: item.image_url,
+        is_subscribable: item.is_subscribable || false,
+        users: item.users ? {
+          full_name: item.users.full_name || 'Mom'
+        } : null
+      })) || [];
+
+      setMenuItems(validMenuItems);
       setRatings(ratingsData || []);
 
-      if (menuData && menuData.length > 0) {
-        const prices = menuData.map((item) => item.price || 0).filter(p => p > 0);
+      if (validMenuItems && validMenuItems.length > 0) {
+        const prices = validMenuItems.map((item) => item.price || 0).filter(p => p > 0);
         if (prices.length > 0) {
           const newMaxPrice = Math.ceil(Math.max(...prices));
           setMaxPrice(newMaxPrice);
