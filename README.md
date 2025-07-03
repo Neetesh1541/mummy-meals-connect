@@ -68,9 +68,6 @@ Submit a Pull Request
 📧 Contact
 Email: mummymeals@gmail.com
 
-LinkedIn: Your LinkedIn
-
-GitHub: Your GitHub
-
+Demo Link- https://mummy-meals-connect.vercel.app/
 📄 License
 This project is licensed under the MIT License.
