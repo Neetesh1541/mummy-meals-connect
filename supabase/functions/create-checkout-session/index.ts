@@ -2,11 +2,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import Stripe from "https://esm.sh/stripe@14.21.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Validate shipping details schema
+const ShippingDetailsSchema = z.object({
+  address: z.string().min(5, "Address must be at least 5 characters").max(300, "Address too long"),
+  city: z.string().min(2, "City must be at least 2 characters").max(100, "City name too long"),
+  state: z.string().min(2, "State must be at least 2 characters").max(100, "State name too long"),
+  pincode: z.string().regex(/^[0-9]{6}$/, "Pincode must be exactly 6 digits"),
+  phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits"),
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -23,10 +33,16 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error("User not found");
 
-    const { shipping_details } = await req.json();
-    if (!shipping_details) {
-        throw new Error("Shipping details are required");
+    const body = await req.json();
+    
+    // Validate input with Zod
+    const parseResult = ShippingDetailsSchema.safeParse(body.shipping_details);
+    if (!parseResult.success) {
+      const errorMessage = parseResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+      throw new Error(`Invalid shipping details: ${errorMessage}`);
     }
+    
+    const shipping_details = parseResult.data;
 
     const { data: cartItems, error: cartError } = await supabaseClient.rpc('get_cart_items', {
       user_id: user.id
@@ -65,6 +81,8 @@ serve(async (req) => {
       }
     });
 
+    console.log("Checkout session created successfully:", session.id);
+
     return new Response(JSON.stringify({ sessionId: session.id, url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -76,4 +94,3 @@ serve(async (req) => {
     });
   }
 });
-
