@@ -115,53 +115,25 @@ export default {
 					to: { height: '0' }
 				},
 				'wave': {
-					'0%': { transform: 'rotate(0deg)' },
-					'10%': { transform: 'rotate(14deg)' },
-					'20%': { transform: 'rotate(-8deg)' },
-					'30%': { transform: 'rotate(14deg)' },
-					'40%': { transform: 'rotate(-4deg)' },
-					'50%': { transform: 'rotate(10deg)' },
-					'60%': { transform: 'rotate(0deg)' },
-					'100%': { transform: 'rotate(0deg)' }
+					'0%, 100%': { transform: 'rotate(0deg)' },
+					'25%': { transform: 'rotate(10deg)' },
+					'75%': { transform: 'rotate(-5deg)' }
 				},
 				'float': {
-					'0%, 100%': { transform: 'translateY(0px)' },
-					'50%': { transform: 'translateY(-20px)' }
+					'0%, 100%': { transform: 'translateY(0) translateZ(0)' },
+					'50%': { transform: 'translateY(-10px) translateZ(0)' }
 				},
-				'fade-in-up': {
-					'0%': { opacity: '0', transform: 'translateY(20px)' },
-					'100%': { opacity: '1', transform: 'translateY(0)' }
-				},
-				'pulse-slow': {
-					'0%, 100%': { opacity: '1' },
-					'50%': { opacity: '0.5' }
-				},
-        'twinkle': {
-          '0%, 100%': { opacity: '0.3' },
-          '50%': { opacity: '1' },
-        },
-        'gradient-pan': {
-          '0%': { 'background-position': '0% 50%' },
-          '50%': { 'background-position': '100% 50%' },
-          '100%': { 'background-position': '0% 50%' },
-        },
-        'float-complex': {
-          '0%, 100%': { transform: 'translate(0, 0) rotate(0deg)' },
-          '25%': { transform: 'translate(20px, -20px) rotate(45deg)' },
-          '50%': { transform: 'translate(0, 0) rotate(0deg)' },
-          '75%': { transform: 'translate(-20px, 20px) rotate(-45deg)' },
-        },
+				'fade-in': {
+					'0%': { opacity: '0' },
+					'100%': { opacity: '1' }
+				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'wave': 'wave 2s ease-in-out infinite',
-				'float': 'float 3s ease-in-out infinite',
-				'fade-in-up': 'fade-in-up 0.5s ease-out',
-				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'twinkle': 'twinkle 3s ease-in-out infinite',
-        'gradient-pan': 'gradient-pan 6s ease-in-out infinite',
-        'float-complex': 'float-complex 10s ease-in-out infinite',
+				'float': 'float 6s ease-in-out infinite',
+				'fade-in': 'fade-in 0.3s ease-out'
 			},
 			fontFamily: {
 				'poppins': ['Poppins', 'sans-serif'],
