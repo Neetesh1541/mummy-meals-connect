@@ -329,13 +329,19 @@ export function MenuBrowser() {
             return (
               <Card
                 key={item.id}
-                className="hover:shadow-lg transition-all duration-300 hover:scale-105 animate-fade-in flex flex-col overflow-hidden"
+                className="hover:shadow-lg transition-shadow duration-200 flex flex-col overflow-hidden"
               >
                 {item.image_url ? (
-                  <img src={item.image_url} alt={item.title || 'Menu item'} className="w-full h-48 object-cover" />
+                  <img 
+                    src={item.image_url} 
+                    alt={item.title || 'Menu item'} 
+                    className="w-full h-48 object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : (
-                  <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                    <Camera className="h-12 w-12 text-gray-400" />
+                  <div className="w-full h-48 bg-muted flex items-center justify-center">
+                    <Camera className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}
                 <CardHeader className="flex-grow pb-2">

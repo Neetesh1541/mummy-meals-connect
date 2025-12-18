@@ -128,7 +128,7 @@
   }
 }
 
-/* Enhanced wavy background with better performance */
+/* Enhanced wavy background with GPU acceleration */
 .wavy-bg {
   background: linear-gradient(45deg, 
     rgba(251, 146, 60, 0.15) 0%, 
@@ -136,104 +136,137 @@
     rgba(253, 224, 71, 0.15) 50%,
     rgba(168, 85, 247, 0.15) 75%,
     rgba(251, 146, 60, 0.15) 100%);
-  background-size: 600% 600%;
-  animation: gradient 20s ease infinite;
+  background-size: 400% 400%;
+  animation: gradient 25s ease infinite;
+  will-change: background-position;
+  transform: translateZ(0);
 }
 
 @keyframes gradient {
-  0% { background-position: 0% 50%; }
-  25% { background-position: 100% 50%; }
-  50% { background-position: 100% 100%; }
-  75% { background-position: 0% 100%; }
-  100% { background-position: 0% 50%; }
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
-/* Enhanced wave patterns */
+/* Wave pattern with reduced complexity for performance */
 .wave-pattern {
   background-image: 
-    radial-gradient(circle at 25px 25px, rgba(251, 146, 60, 0.3) 2px, transparent 2px),
-    radial-gradient(circle at 75px 75px, rgba(34, 197, 94, 0.3) 2px, transparent 2px),
-    radial-gradient(circle at 125px 25px, rgba(168, 85, 247, 0.2) 1px, transparent 1px);
-  background-size: 150px 150px, 150px 150px, 100px 100px;
-  animation: wave-pattern-move 30s linear infinite;
+    radial-gradient(circle at 25px 25px, rgba(251, 146, 60, 0.2) 2px, transparent 2px);
+  background-size: 100px 100px;
+  animation: wave-pattern-move 40s linear infinite;
+  will-change: background-position;
+  transform: translateZ(0);
 }
 
 @keyframes wave-pattern-move {
-  0% { background-position: 0px 0px, 0px 0px, 0px 0px; }
-  100% { background-position: 150px 150px, -150px 75px, 100px -100px; }
+  0% { background-position: 0px 0px; }
+  100% { background-position: 100px 100px; }
 }
 
-/* Enhanced animated soft gradient */
+/* Animated soft gradient with GPU acceleration */
 .animated-soft-gradient {
   background: linear-gradient(45deg, 
-    #fef7ed, /* warm-orange-50 */
-    #f0fdf4, /* pastel-green-50 */
-    #fefce8, /* cream-50 */
-    #eff6ff, /* blue-50 */
-    #faf5ff, /* purple-50 */
-    #fef7ed  /* back to start */
+    #fef7ed,
+    #f0fdf4,
+    #fefce8,
+    #fef7ed
   );
-  background-size: 1000% 1000%;
-  animation: gradient 30s ease infinite;
+  background-size: 400% 400%;
+  animation: gradient 35s ease infinite;
+  will-change: background-position;
+  transform: translateZ(0);
 }
 
 .dark .animated-soft-gradient {
   background: linear-gradient(45deg, 
-    #111827, /* gray-900 */
-    rgba(88, 28, 135, 0.3), /* purple-900/30 */
-    rgba(30, 58, 138, 0.3), /* blue-900/30 */
-    rgba(5, 46, 22, 0.3), /* green-900/30 */
-    rgba(124, 45, 18, 0.3), /* orange-900/30 */
+    #111827,
+    rgba(88, 28, 135, 0.2),
+    rgba(30, 58, 138, 0.2),
     #111827
   );
-  background-size: 1000% 1000%;
-  animation: gradient 35s ease infinite;
+  background-size: 400% 400%;
+  animation: gradient 40s ease infinite;
+  will-change: background-position;
+  transform: translateZ(0);
 }
 
-/* Enhanced smooth transitions with easing */
+/* Optimized smooth transitions */
 .smooth-transition {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+  will-change: transform;
 }
 
-/* Enhanced custom scrollbar */
+/* Custom scrollbar - simplified for performance */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(45deg, rgba(251, 146, 60, 0.7), rgba(34, 197, 94, 0.7));
-  border-radius: 8px;
-  border: 2px solid transparent;
-  background-clip: content-box;
+  background: hsl(var(--primary) / 0.5);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(45deg, rgba(251, 146, 60, 0.9), rgba(34, 197, 94, 0.9));
-  background-clip: content-box;
+  background: hsl(var(--primary) / 0.7);
 }
 
-/* Enhanced backdrop blur effects */
+/* Glass effect with simplified backdrop */
 .glass-effect {
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .dark .glass-effect {
   background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Enhanced shadow effects */
+/* Simplified shadow effects */
 .shadow-glow {
-  box-shadow: 0 0 20px rgba(251, 146, 60, 0.3), 0 0 40px rgba(34, 197, 94, 0.2);
+  box-shadow: 0 4px 20px rgba(251, 146, 60, 0.2);
 }
 
 .shadow-glow-hover:hover {
-  box-shadow: 0 0 30px rgba(251, 146, 60, 0.5), 0 0 60px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 8px 30px rgba(251, 146, 60, 0.35);
+}
+
+/* Performance-optimized floating animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateZ(0); }
+  50% { transform: translateY(-10px) translateZ(0); }
+}
+
+@keyframes float-complex {
+  0%, 100% { transform: translateY(0) rotate(0deg) translateZ(0); }
+  50% { transform: translateY(-15px) rotate(3deg) translateZ(0); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-float-complex {
+  animation: float-complex 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .wavy-bg,
+  .wave-pattern,
+  .animated-soft-gradient,
+  .animate-float,
+  .animate-float-complex {
+    animation: none;
+  }
+  
+  .smooth-transition {
+    transition: none;
+  }
 }
