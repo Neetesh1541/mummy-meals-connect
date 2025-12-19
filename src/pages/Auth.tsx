@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { User, Heart, Package } from "lucide-react";
+import { User, Heart, Package, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 type UserRole = "customer" | "mom" | "delivery";
 type AuthMode = "login" | "signup";
@@ -26,26 +28,47 @@ export default function Auth() {
     phone: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
   
   const { user, signUp, signIn } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { toast } = useToast();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
+    if (user && !showResetPassword) {
       navigate("/");
     }
-  }, [user, navigate]);
+  }, [user, navigate, showResetPassword]);
 
-  // Handle password reset mode
+  // Handle URL parameters for email confirmation and password reset
   useEffect(() => {
-    const mode = searchParams.get('mode');
-    if (mode === 'reset') {
-      setAuthMode('login');
-      setShowForgotPassword(false);
+    const type = searchParams.get('type');
+    const errorDescription = searchParams.get('error_description');
+    
+    if (errorDescription) {
+      toast({
+        title: "Link Expired",
+        description: "This link has expired or is invalid. Please request a new one.",
+        variant: "destructive"
+      });
+      return;
     }
-  }, [searchParams]);
+    
+    if (type === 'recovery') {
+      setShowResetPassword(true);
+      setAuthMode('login');
+    } else if (type === 'signup' || type === 'email_confirmation') {
+      setEmailConfirmed(true);
+      toast({
+        title: "Email Verified!",
+        description: "Your email has been verified. You can now sign in.",
+      });
+    }
+  }, [searchParams, toast]);
 
   const roles = [
     {
@@ -106,6 +129,85 @@ export default function Auth() {
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      
+      toast({
+        title: "Password Updated!",
+        description: "Your password has been successfully reset. You can now sign in.",
+      });
+      setShowResetPassword(false);
+      setNewPassword("");
+      navigate("/auth");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Show password reset form
+  if (showResetPassword) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container py-20">
+          <div className="max-w-md mx-auto">
+            <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm">
+              <CardHeader className="text-center">
+                <CardTitle className="font-poppins text-2xl">Reset Your Password</CardTitle>
+                <CardDescription>
+                  Enter your new password below
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <form onSubmit={handlePasswordReset} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter your new password"
+                      minLength={6}
+                      required
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="w-full bg-gradient-to-r from-warm-orange-500 to-warm-orange-600 hover:from-warm-orange-600 hover:to-warm-orange-700"
+                  >
+                    {isSubmitting ? "Updating..." : "Update Password"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   if (showForgotPassword) {
     return (
       <div className="min-h-screen bg-background">
@@ -138,6 +240,12 @@ export default function Auth() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {emailConfirmed && authMode === "login" && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-pastel-green-100 dark:bg-pastel-green-900/30 text-pastel-green-700 dark:text-pastel-green-300">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">Email verified! You can now sign in.</span>
+                </div>
+              )}
               {authMode === "signup" && (
                 <div className="space-y-4">
                   <Label className="text-base font-medium">Choose your role:</Label>

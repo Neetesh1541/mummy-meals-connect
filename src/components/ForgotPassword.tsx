@@ -24,7 +24,7 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?mode=reset`
+        redirectTo: `${window.location.origin}/auth?type=recovery`
       });
 
       if (error) throw error;

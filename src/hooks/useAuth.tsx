@@ -70,25 +70,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, userData: any) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}/auth`,
         data: userData
       }
     });
 
     if (error) {
+      // Handle "User already registered" case with a friendlier message
+      if (error.message.includes('already registered') || error.message.includes('already exists')) {
+        toast({
+          title: "Account Exists",
+          description: "An account with this email already exists. Please sign in instead or reset your password.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Signup Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    } else if (data?.user?.identities?.length === 0) {
+      // User already exists but tried to sign up again
       toast({
-        title: "Signup Error",
-        description: error.message,
+        title: "Account Already Exists",
+        description: "An account with this email already exists. Please sign in or reset your password if you forgot it.",
         variant: "destructive"
+      });
+      return { error: new Error("User already exists") };
+    } else if (data?.user && !data?.session) {
+      // Email confirmation required
+      toast({
+        title: "Check Your Email!",
+        description: "We've sent a confirmation link to your email. Please click it to activate your account before signing in.",
       });
     } else {
       toast({
         title: "Success!",
-        description: "Account created successfully! You can now sign in.",
+        description: "Account created successfully!",
       });
     }
 
@@ -102,9 +125,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
+      // Provide friendlier error messages
+      let errorMessage = error.message;
+      let errorTitle = "Login Error";
+      
+      if (error.message.includes('Invalid login credentials')) {
+        errorTitle = "Unable to Sign In";
+        errorMessage = "Invalid email or password. If you just signed up, please check your email for a confirmation link first.";
+      } else if (error.message.includes('Email not confirmed')) {
+        errorTitle = "Email Not Verified";
+        errorMessage = "Please check your email and click the confirmation link before signing in.";
+      }
+      
       toast({
-        title: "Login Error",
-        description: error.message,
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive"
       });
     } else {
