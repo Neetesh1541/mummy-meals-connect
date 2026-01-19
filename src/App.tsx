@@ -22,6 +22,9 @@ const Profile = lazy(() => import("./pages/Profile"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCancel = lazy(() => import("./pages/PaymentCancel"));
 
+// Notification banner (loaded lazily)
+const NotificationBanner = lazy(() => import("./components/NotificationBanner").then(m => ({ default: m.NotificationBanner })));
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -48,6 +51,9 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <Suspense fallback={null}>
+            <NotificationBanner />
+          </Suspense>
           <BrowserRouter>
             <Suspense fallback={<PageLoader />}>
               <Routes>

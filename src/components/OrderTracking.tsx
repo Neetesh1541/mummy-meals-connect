@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, Truck, MapPin, Phone, User, Wallet, CreditCard, MessageSquare } from "lucide-react";
+import { Clock, CheckCircle, Truck, MapPin, Phone, User, Wallet, CreditCard, MessageSquare, Bell, BellOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { differenceInMinutes } from "date-fns";
@@ -12,12 +12,19 @@ import { ChatBox } from "./ChatBox";
 import { Order } from "@/types/order";
 import { useToast } from "@/hooks/use-toast";
 import { getStatusClassNames } from "@/lib/status-colors";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export function OrderTracking() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [now, setNow] = useState(new Date());
   const { toast } = useToast();
+  const { 
+    permission: notificationPermission, 
+    requestPermission, 
+    notifyOrderUpdate, 
+    notifyDeliveryPartnerAssigned 
+  } = useNotifications();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -112,6 +119,9 @@ export function OrderTracking() {
                   title: "Order Update",
                   description: message,
                 });
+                
+                // Send push notification
+                notifyOrderUpdate(newData.status);
               }
               
               // If delivery partner was assigned
@@ -120,6 +130,7 @@ export function OrderTracking() {
                   title: "Delivery Partner Assigned",
                   description: "A delivery partner has been assigned to your order.",
                 });
+                notifyDeliveryPartnerAssigned();
               }
             }
             
@@ -145,7 +156,7 @@ export function OrderTracking() {
         supabase.removeChannel(channel);
       };
     }
-  }, [user, fetchOrders, toast]);
+  }, [user, fetchOrders, toast, notifyOrderUpdate, notifyDeliveryPartnerAssigned]);
 
   const getStatusIcon = (status: string) => {
     const iconColor = getStatusClassNames(status).text;
@@ -192,7 +203,28 @@ export function OrderTracking() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Order Tracking</h2>
+      {/* Header with notification toggle */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Order Tracking</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={requestPermission}
+          className={`gap-2 rounded-xl ${notificationPermission === 'granted' ? 'text-green-600 border-green-200 bg-green-50' : ''}`}
+        >
+          {notificationPermission === 'granted' ? (
+            <>
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">Notifications On</span>
+            </>
+          ) : (
+            <>
+              <BellOff className="h-4 w-4" />
+              <span className="hidden sm:inline">Enable Notifications</span>
+            </>
+          )}
+        </Button>
+      </div>
       
       {orders.length === 0 ? (
         <Card>
