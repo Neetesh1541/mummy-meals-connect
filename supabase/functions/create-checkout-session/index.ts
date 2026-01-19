@@ -55,7 +55,14 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    const line_items = cartItems.map(item => ({
+    interface CartItem {
+      id: string;
+      menu: { title: string; price: number; mom_id: string };
+      menu_id: string;
+      quantity: number;
+    }
+
+    const line_items = cartItems.map((item: CartItem) => ({
         price_data: {
             currency: 'inr',
             product_data: {
@@ -65,7 +72,6 @@ serve(async (req) => {
         },
         quantity: item.quantity,
     }));
-    
     const origin = req.headers.get("origin");
 
     const session = await stripe.checkout.sessions.create({
@@ -88,7 +94,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Error creating checkout session:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });
