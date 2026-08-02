@@ -1,4 +1,5 @@
 Mummy Meals 🍲
+
 Taste of Home, Every Day!
 
 Mummy Meals is a food delivery platform designed especially for bachelors, students, and working professionals who miss healthy, fresh, home-cooked food. It connects local moms to customers, allowing them to deliver nutritious, hygienic, and tasty meals straight from their kitchens.
@@ -63,7 +64,7 @@ Commit your changes (git commit -m 'Add new feature')
 
 Push to the branch (git push origin feature/my-feature)
 
-Submit a Pull Request
+Submit a Pull Request..
 
 📧 Contact
 Email: mummymeals@gmail.com
