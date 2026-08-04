@@ -64,9 +64,14 @@ const StarDisplay = ({ rating, count }: { rating: number; count: number }) => {
 export function MenuBrowser() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const {
+    items: cartItems,
+    refresh: refreshCart,
+    addItem,
+    setQuantity: setCartQuantity,
+  } = useCart();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [ratings, setRatings] = useState<Rating[]>([]);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
