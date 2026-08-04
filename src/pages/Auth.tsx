@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { User, Heart, Package, CheckCircle } from "lucide-react";
+import { User, Heart, Package, CheckCircle, MailCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -261,9 +261,33 @@ export default function Auth() {
             </CardHeader>
             <CardContent className="space-y-6">
               {emailConfirmed && authMode === "login" && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-pastel-green-100 dark:bg-pastel-green-900/30 text-pastel-green-700 dark:text-pastel-green-300">
+                <div className="flex items-center gap-2 rounded-xl border border-secondary/30 bg-secondary/10 p-3 text-secondary">
                   <CheckCircle className="h-5 w-5" />
                   <span className="text-sm font-medium">Email verified! You can now sign in.</span>
+                </div>
+              )}
+              {needsConfirmation && (
+                <div className="space-y-3 rounded-xl border border-primary/30 bg-primary/10 p-4">
+                  <div className="flex items-start gap-2">
+                    <MailCheck className="mt-0.5 h-5 w-5 text-primary" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold">Confirm your email to continue</p>
+                      <p className="text-xs text-muted-foreground">
+                        We sent a confirmation link{formData.email ? ` to ${formData.email}` : ""}. Click it, then sign in.
+                        Check your spam folder if you don't see it.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full rounded-xl"
+                    onClick={handleResend}
+                    disabled={resending}
+                  >
+                    {resending ? "Sending..." : "Resend confirmation email"}
+                  </Button>
                 </div>
               )}
               {authMode === "signup" && (
