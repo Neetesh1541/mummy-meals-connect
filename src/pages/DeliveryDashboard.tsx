@@ -5,13 +5,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { WavyBackground } from "@/components/WavyBackground";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Order } from "@/types/order";
 import { AvailableDeliveriesTab } from "@/components/delivery/AvailableDeliveriesTab";
 import { MyDeliveriesTab } from "@/components/delivery/MyDeliveriesTab";
-import { StatCard } from "@/components/delivery/StatCard";
 import { DollarSign, Truck } from "lucide-react";
 import { LocationSharer } from "@/components/delivery/LocationSharer";
+import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { StatTile } from "@/components/dashboard/StatTile";
+import {
+  DashboardTabsList,
+  DashboardTabsTrigger,
+} from "@/components/dashboard/DashboardTabs";
 
 export default function DeliveryDashboard() {
   const { user } = useAuth();
@@ -360,66 +365,55 @@ export default function DeliveryDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <WavyBackground />
-      <Header />
-      <main className="container py-8 relative z-10">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-8 text-center">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-warm-orange-500 to-pastel-green-500 bg-clip-text text-transparent animate-fade-in">
-              Deliver and Earn!
-            </h1>
-            <p className="text-muted-foreground mt-2 animate-fade-in">
-              Accept deliveries and make customers happy
-            </p>
-          </div>
+    <DashboardShell
+      eyebrow="Delivery Partner"
+      title="Deliver and earn"
+      subtitle="Pick up nearby orders, share your live location and make customers happy."
+      maxWidth="max-w-5xl"
+    >
+      <div className="grid gap-4 sm:grid-cols-2 animate-fade-up">
+        <StatTile
+          title="Total Earnings"
+          value={`₹${stats.totalEarnings.toFixed(2)}`}
+          description="From completed deliveries"
+          icon={<DollarSign className="h-5 w-5" />}
+          tone="secondary"
+        />
+        <StatTile
+          title="Completed Deliveries"
+          value={stats.completedDeliveries}
+          description="Making customers happy"
+          icon={<Truck className="h-5 w-5" />}
+          tone="primary"
+        />
+      </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-8 animate-fade-in">
-            <StatCard 
-              title="Total Earnings"
-              value={`₹${stats.totalEarnings.toFixed(2)}`}
-              icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-              description="From completed deliveries"
-            />
-            <StatCard 
-              title="Completed Deliveries"
-              value={stats.completedDeliveries}
-              icon={<Truck className="h-4 w-4 text-muted-foreground" />}
-              description="Making customers happy"
-            />
-          </div>
+      <LocationSharer />
 
-          <div className="mb-8 animate-fade-in">
-            <LocationSharer />
-          </div>
-
-          <Tabs defaultValue="available" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="available">
-                Available Deliveries ({availableOrders.length})
-              </TabsTrigger>
-              <TabsTrigger value="mine">
-                My Deliveries ({myOrders.length})
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="available">
-              <AvailableDeliveriesTab
-                orders={availableOrders}
-                onAccept={acceptOrder}
-                updatingOrderId={updatingOrder}
-              />
-            </TabsContent>
-            <TabsContent value="mine">
-              <MyDeliveriesTab
-                orders={myOrders}
-                onComplete={completeOrder}
-                updatingOrderId={updatingOrder}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
-      <Footer />
-    </div>
+      <Tabs defaultValue="available" className="w-full">
+        <DashboardTabsList className="mb-6">
+          <DashboardTabsTrigger value="available">
+            Available ({availableOrders.length})
+          </DashboardTabsTrigger>
+          <DashboardTabsTrigger value="mine">
+            My Deliveries ({myOrders.length})
+          </DashboardTabsTrigger>
+        </DashboardTabsList>
+        <TabsContent value="available" className="animate-fade-in">
+          <AvailableDeliveriesTab
+            orders={availableOrders}
+            onAccept={acceptOrder}
+            updatingOrderId={updatingOrder}
+          />
+        </TabsContent>
+        <TabsContent value="mine" className="animate-fade-in">
+          <MyDeliveriesTab
+            orders={myOrders}
+            onComplete={completeOrder}
+            updatingOrderId={updatingOrder}
+          />
+        </TabsContent>
+      </Tabs>
+    </DashboardShell>
   );
 }
