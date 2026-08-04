@@ -106,6 +106,7 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setNeedsConfirmation(false);
 
     try {
       if (authMode === "signup") {
@@ -114,21 +115,38 @@ export default function Auth() {
           user_type: selectedRole,
           phone: formData.phone
         };
-        
+
         const { error } = await signUp(formData.email, formData.password, userData);
-        
+
         if (!error) {
-          // Clear form on successful signup
-          setFormData({ fullName: "", email: "", password: "", phone: "" });
+          setNeedsConfirmation(true);
+          setFormData({ fullName: "", email: formData.email, password: "", phone: "" });
         }
       } else {
-        await signIn(formData.email, formData.password);
+        const { error } = await signIn(formData.email, formData.password);
+        if (error && /not confirmed|not verified/i.test(error.message ?? "")) {
+          setNeedsConfirmation(true);
+        }
       }
     } catch (error) {
       console.error("Auth error:", error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleResend = async () => {
+    if (!formData.email) {
+      toast({
+        title: "Email required",
+        description: "Enter your email address first, then resend the link.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setResending(true);
+    await resendConfirmation(formData.email);
+    setResending(false);
   };
 
   const handlePasswordReset = async (e: React.FormEvent) => {
