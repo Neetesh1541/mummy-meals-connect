@@ -65,6 +65,7 @@ export default function CustomerDashboard() {
 
         <CartSidebar />
       </div>
+      </CartProvider>
     </DashboardShell>
   );
 }
