@@ -136,22 +136,8 @@ export function MenuBrowser() {
   }, [toast]);
 
   const fetchCartItems = useCallback(async () => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase.rpc('get_user_cart', {
-        user_id: user.id
-      });
-      
-      if (error) {
-        console.error('Error fetching cart items:', error);
-        return;
-      }
-      
-      setCartItems(data || []);
-    } catch (error) {
-      console.error('Error fetching cart items:', error);
-    }
-  }, [user]);
+    await refreshCart();
+  }, [refreshCart]);
 
   useEffect(() => {
     if (user) {
