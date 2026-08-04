@@ -310,8 +310,9 @@ export default function MomDashboard() {
           icon={<Wallet className="h-5 w-5" />}
           tone="muted"
         />
+      </div>
 
-          <Tabs defaultValue="menu" className="w-full">
+      <Tabs defaultValue="menu" className="w-full">
             <DashboardTabsList className="mb-6">
               <DashboardTabsTrigger value="menu">
                 <ChefHat className="h-4 w-4" />
