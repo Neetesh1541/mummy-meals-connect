@@ -1,5 +1,9 @@
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { StatTile } from "@/components/dashboard/StatTile";
+import {
+  DashboardTabsList,
+  DashboardTabsTrigger,
+} from "@/components/dashboard/DashboardTabs";
 import { MenuManagement } from "@/components/MenuManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -272,83 +276,53 @@ export default function MomDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative animated-soft-gradient">
-      <Header />
-      <main className="container py-8 relative z-10">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div className="text-center animate-fade-in">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-warm-orange-500 to-pastel-green-500 bg-clip-text text-transparent">
-              Your Kitchen Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Manage your menu and orders with love
-            </p>
-          </div>
+    <DashboardShell
+      eyebrow="Mummy Partner"
+      title="Your kitchen dashboard"
+      subtitle="Manage your menu, track incoming orders and watch your earnings grow — all in one place."
+    >
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 animate-fade-up">
+        <StatTile
+          title="Total Orders"
+          value={stats.totalOrders}
+          description={`${stats.activeOrders} active right now`}
+          icon={<Users className="h-5 w-5" />}
+          tone="primary"
+        />
+        <StatTile
+          title="Menu Items"
+          value={stats.menuItems}
+          description="Dishes on your menu"
+          icon={<ChefHat className="h-5 w-5" />}
+          tone="secondary"
+        />
+        <StatTile
+          title="Online Revenue"
+          value={`₹${stats.onlineRevenue.toFixed(2)}`}
+          description="From online payments"
+          icon={<CreditCard className="h-5 w-5" />}
+          tone="accent"
+        />
+        <StatTile
+          title="COD Revenue"
+          value={`₹${stats.codRevenue.toFixed(2)}`}
+          description="To be collected"
+          icon={<Wallet className="h-5 w-5" />}
+          tone="muted"
+        />
+      </div>
 
-          <div className="grid md:grid-cols-4 gap-6 animate-fade-in">
-            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-warm-orange-400">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                <div className="p-2 bg-warm-orange-100 rounded-full">
-                  <Users className="h-4 w-4 text-warm-orange-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalOrders}</div>
-                <p className="text-xs text-muted-foreground">{stats.activeOrders} active</p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-pastel-green-400">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Menu Items</CardTitle>
-                 <div className="p-2 bg-pastel-green-100 rounded-full">
-                  <ChefHat className="h-4 w-4 text-pastel-green-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.menuItems}</div>
-              </CardContent>
-            </Card>
-            
-            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-green-400">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Online Revenue</CardTitle>
-                <div className="p-2 bg-green-100 rounded-full">
-                  <CreditCard className="h-4 w-4 text-green-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">₹{stats.onlineRevenue.toFixed(2)}</div>
-                 <p className="text-xs text-muted-foreground">From Stripe payments</p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow border-t-4 border-t-blue-400">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">COD Revenue</CardTitle>
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Wallet className="h-4 w-4 text-blue-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">₹{stats.codRevenue.toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">To be collected</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Tabs defaultValue="menu" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="menu" className="gap-2">
+      <Tabs defaultValue="menu" className="w-full">
+            <DashboardTabsList className="mb-6">
+              <DashboardTabsTrigger value="menu">
                 <ChefHat className="h-4 w-4" />
                 Menu Management
-              </TabsTrigger>
-              <TabsTrigger value="orders" className="gap-2">
+              </DashboardTabsTrigger>
+              <DashboardTabsTrigger value="orders">
                 <Clock className="h-4 w-4" />
                 Order Management
-              </TabsTrigger>
-            </TabsList>
+              </DashboardTabsTrigger>
+            </DashboardTabsList>
 
             <TabsContent value="menu" className="animate-fade-in">
               <MenuManagement />
@@ -356,20 +330,22 @@ export default function MomDashboard() {
 
             <TabsContent value="orders" className="animate-fade-in">
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold">Order Management</h2>
-                
+                <h2 className="text-2xl font-bold tracking-tight">Order Management</h2>
+
                 {orders.length === 0 ? (
-                  <Card>
-                    <CardContent className="text-center py-12">
-                      <Clock className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <Card className="border-dashed border-border/70 bg-card/60 backdrop-blur-sm">
+                    <CardContent className="text-center py-16">
+                      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                        <Clock className="h-7 w-7 text-primary" />
+                      </div>
                       <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
-                      <p className="text-gray-600">Orders will appear here when customers place them</p>
+                      <p className="text-muted-foreground">Orders will appear here when customers place them</p>
                     </CardContent>
                   </Card>
                 ) : (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {orders.map((order) => (
-                      <Card key={order.id} className="hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
+                      <Card key={order.id} className="border-border/60 bg-card/70 backdrop-blur-sm smooth-transition hover:-translate-y-1 hover:shadow-warm overflow-hidden flex flex-col">
                         <CardContent className="p-6 flex-grow flex flex-col">
                           <div className="flex justify-between items-start mb-4">
                             <div>
@@ -452,9 +428,6 @@ export default function MomDashboard() {
               </div>
             </TabsContent>
           </Tabs>
-        </div>
-      </main>
-      <Footer />
-    </div>
+    </DashboardShell>
   );
 }

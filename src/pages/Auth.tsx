@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { User, Heart, Package, CheckCircle } from "lucide-react";
+import { User, Heart, Package, CheckCircle, MailCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -31,8 +31,10 @@ export default function Auth() {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [emailConfirmed, setEmailConfirmed] = useState(false);
-  
-  const { user, signUp, signIn } = useAuth();
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  const { user, signUp, signIn, resendConfirmation } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -104,6 +106,7 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setNeedsConfirmation(false);
 
     try {
       if (authMode === "signup") {
@@ -112,21 +115,38 @@ export default function Auth() {
           user_type: selectedRole,
           phone: formData.phone
         };
-        
+
         const { error } = await signUp(formData.email, formData.password, userData);
-        
+
         if (!error) {
-          // Clear form on successful signup
-          setFormData({ fullName: "", email: "", password: "", phone: "" });
+          setNeedsConfirmation(true);
+          setFormData({ fullName: "", email: formData.email, password: "", phone: "" });
         }
       } else {
-        await signIn(formData.email, formData.password);
+        const { error } = await signIn(formData.email, formData.password);
+        if (error && /not confirmed|not verified/i.test(error.message ?? "")) {
+          setNeedsConfirmation(true);
+        }
       }
     } catch (error) {
       console.error("Auth error:", error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleResend = async () => {
+    if (!formData.email) {
+      toast({
+        title: "Email required",
+        description: "Enter your email address first, then resend the link.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setResending(true);
+    await resendConfirmation(formData.email);
+    setResending(false);
   };
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -241,9 +261,33 @@ export default function Auth() {
             </CardHeader>
             <CardContent className="space-y-6">
               {emailConfirmed && authMode === "login" && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-pastel-green-100 dark:bg-pastel-green-900/30 text-pastel-green-700 dark:text-pastel-green-300">
+                <div className="flex items-center gap-2 rounded-xl border border-secondary/30 bg-secondary/10 p-3 text-secondary">
                   <CheckCircle className="h-5 w-5" />
                   <span className="text-sm font-medium">Email verified! You can now sign in.</span>
+                </div>
+              )}
+              {needsConfirmation && (
+                <div className="space-y-3 rounded-xl border border-primary/30 bg-primary/10 p-4">
+                  <div className="flex items-start gap-2">
+                    <MailCheck className="mt-0.5 h-5 w-5 text-primary" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold">Confirm your email to continue</p>
+                      <p className="text-xs text-muted-foreground">
+                        We sent a confirmation link{formData.email ? ` to ${formData.email}` : ""}. Click it, then sign in.
+                        Check your spam folder if you don't see it.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full rounded-xl"
+                    onClick={handleResend}
+                    disabled={resending}
+                  >
+                    {resending ? "Sending..." : "Resend confirmation email"}
+                  </Button>
                 </div>
               )}
               {authMode === "signup" && (

@@ -13,6 +13,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  resendConfirmation: (email: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -181,6 +182,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   }, [toast]);
 
+  const resendConfirmation = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth?type=signup` }
+    });
+
+    if (error) {
+      toast({
+        title: "Couldn't resend",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Confirmation email sent",
+        description: `We sent a new confirmation link to ${email}.`
+      });
+    }
+
+    return { error };
+  }, [toast]);
+
   const value = useMemo(() => ({
     user,
     session,
@@ -189,8 +213,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signIn,
     signOut,
-    resetPassword
-  }), [user, session, userRole, loading, signUp, signIn, signOut, resetPassword]);
+    resetPassword,
+    resendConfirmation
+  }), [user, session, userRole, loading, signUp, signIn, signOut, resetPassword, resendConfirmation]);
 
   return (
     <AuthContext.Provider value={value}>
