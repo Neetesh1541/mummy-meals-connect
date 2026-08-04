@@ -19,6 +19,7 @@ export default function CustomerDashboard() {
       title="Welcome to your food paradise"
       subtitle="Discover delicious home-cooked meals from local moms, track your orders live, and manage your subscriptions."
     >
+      <CartProvider>
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="min-w-0 flex-1">
           <Tabs defaultValue="browse" className="w-full">
