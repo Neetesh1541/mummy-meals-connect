@@ -6,6 +6,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Clock, MessageSquare, Home, Repeat } from "lucide-react";
 import { MySubscriptions } from "@/components/MySubscriptions";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { CartProvider } from "@/hooks/useCart";
 import {
   DashboardTabsList,
   DashboardTabsTrigger,
