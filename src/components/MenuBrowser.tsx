@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { SubscriptionDialog } from "./SubscriptionDialog";
+import { useCart } from "@/hooks/useCart";
 
 interface MenuItem {
   id: string;
