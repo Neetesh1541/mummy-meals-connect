@@ -189,56 +189,11 @@ export function MenuBrowser() {
 
   const addToCart = async (menuItem: MenuItem) => {
     if (!user) return;
-    try {
-      const { error } = await supabase.rpc('add_to_cart', {
-        p_customer_id: user.id,
-        p_menu_item_id: menuItem.id,
-        p_quantity: 1
-      });
-      
-      if (error) throw error;
-      
-      fetchCartItems();
-      toast({
-        title: "Added to Cart",
-        description: `${menuItem.title} added to your cart`,
-      });
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add item to cart",
-        variant: "destructive",
-      });
-    }
+    await addItem(menuItem.id, menuItem.title);
   };
 
   const updateCartQuantity = async (cartItemId: string, newQuantity: number) => {
-    try {
-      if (newQuantity <= 0) {
-        const { error } = await supabase.rpc('remove_from_cart', {
-          cart_item_id: cartItemId
-        });
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.rpc('update_cart_quantity', {
-          cart_item_id: cartItemId,
-          new_quantity: newQuantity
-        });
-        
-        if (error) throw error;
-      }
-      
-      fetchCartItems();
-    } catch (error) {
-      console.error('Error updating cart:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update cart",
-        variant: "destructive",
-      });
-    }
+    await setCartQuantity(cartItemId, newQuantity);
   };
 
   const getCartQuantity = (menuId: string) => {
