@@ -31,8 +31,10 @@ export default function Auth() {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [emailConfirmed, setEmailConfirmed] = useState(false);
-  
-  const { user, signUp, signIn } = useAuth();
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  const { user, signUp, signIn, resendConfirmation } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
