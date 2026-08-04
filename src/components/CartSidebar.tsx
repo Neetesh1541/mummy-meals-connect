@@ -1,265 +1,76 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ShoppingCart, Minus, Plus, Trash2, CreditCard } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, CreditCard, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { CheckoutDialog } from "./CheckoutDialog";
-
-interface CartItemWithMenu {
-  id: string;
-  quantity: number;
-  menu_id: string;
-  menu: {
-    title: string;
-    price: number;
-    mom_id: string;
-    users: {
-      full_name: string;
-    };
-  };
-}
-
-interface CartItemRaw {
-  id: string;
-  quantity: number;
-  menu_id: string;
-  menu: any; // Json type from Supabase
-}
+import { CheckoutDialog, type ShippingForm } from "./CheckoutDialog";
+import { useCart } from "@/hooks/useCart";
 
 export function CartSidebar() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [cartItems, setCartItems] = useState<CartItemWithMenu[]>([]);
+  const { items, totalItems, totalAmount, setQuantity, clear, refresh } = useCart();
   const [loading, setLoading] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
-  const transformCartData = (rawData: CartItemRaw[]): CartItemWithMenu[] => {
-    return rawData.map(item => ({
-      id: item.id,
-      quantity: item.quantity,
-      menu_id: item.menu_id,
-      menu: {
-        title: item.menu?.title || 'Unknown Item',
-        price: Number(item.menu?.price) || 0,
-        mom_id: item.menu?.mom_id || '',
-        users: {
-          full_name: item.menu?.users?.full_name || 'Mom'
-        }
-      }
-    }));
-  };
-
-  const fetchCartItems = useCallback(async () => {
-    if (!user) {
-      setCartItems([]);
-      return;
-    }
-    
-    try {
-      console.log('Fetching cart items for user:', user.id);
-      const { data, error } = await supabase.rpc('get_cart_items', {
-        user_id: user.id,
-      });
-
-      if (error) {
-        console.error('Error fetching cart:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch cart items",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      console.log('Cart items fetched:', data);
-      const transformedData = transformCartData(data || []);
-      setCartItems(transformedData);
-    } catch (error) {
-      console.error('Error fetching cart:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch cart items",
-        variant: "destructive",
-      });
-    }
-  }, [user, toast]);
-
-  useEffect(() => {
-    if (user) {
-      fetchCartItems();
-
-      // Set up real-time subscription for cart changes
-      const channel = supabase
-        .channel(`cart-changes-${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'cart',
-            filter: `customer_id=eq.${user.id}`,
-          },
-          (payload) => {
-            console.log('Cart change detected:', payload);
-            fetchCartItems();
-          }
-        )
-        .subscribe((status, err) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`Successfully subscribed to cart changes for user ${user.id}`);
-          }
-          if (status === 'CHANNEL_ERROR') {
-            console.error(`Cart subscription error for user ${user.id}:`, err);
-            toast({
-              title: "Connection Error",
-              description: "Could not connect to real-time updates. Please refresh the page.",
-              variant: "destructive"
-            });
-          }
-        });
-
-      return () => {
-        console.log(`Cleaning up cart subscription for user ${user.id}`);
-        supabase.removeChannel(channel);
-      };
-    } else {
-      setCartItems([]);
-    }
-  }, [user, fetchCartItems, toast]);
-
-  const updateQuantity = async (cartItemId: string, newQuantity: number) => {
-    try {
-      console.log('Updating cart item:', cartItemId, 'to quantity:', newQuantity);
-      
-      if (newQuantity <= 0) {
-        const { error } = await supabase.rpc('remove_from_cart', {
-          cart_item_id: cartItemId,
-        });
-        if (error) throw error;
-        console.log('Item removed from cart');
-      } else {
-        const { error } = await supabase.rpc('update_cart_quantity', {
-          cart_item_id: cartItemId,
-          new_quantity: newQuantity,
-        });
-        if (error) throw error;
-        console.log('Cart quantity updated');
-      }
-    } catch (error: any) {
-      console.error('Error updating cart:', error);
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to update cart",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const clearCart = async () => {
-    if (!user) return;
-    try {
-      console.log('Clearing cart for user:', user.id);
-      const { error } = await supabase.rpc('clear_cart', {
-        user_id: user.id,
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Cart cleared",
-        description: "All items removed from cart",
-      });
-    } catch (error: any) {
-      console.error('Error clearing cart:', error);
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to clear cart",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const checkout = async (address: any, paymentMethod: 'stripe' | 'cod') => {
+  const checkout = async (form: ShippingForm, paymentMethod: "stripe" | "cod") => {
     if (!user) return;
     setLoading(true);
+
+    // Single canonical shape, accepted by the checkout function's validator
+    const shipping_details = {
+      name: form.fullName,
+      address: form.street,
+      city: form.city,
+      state: form.state,
+      pincode: form.zip,
+      phone: form.phone,
+    };
+
     try {
-      console.log('Processing checkout with:', { paymentMethod, address });
+      if (paymentMethod === "stripe") {
+        const { data, error } = await supabase.functions.invoke(
+          "create-checkout-session",
+          { body: { shipping_details } }
+        );
 
-      if (paymentMethod === 'stripe') {
-        const shipping_details = {
-          name: address.fullName,
-          phone: address.phone,
-          address: {
-            line1: address.street,
-            city: address.city,
-            state: address.state,
-            postal_code: address.zip,
-            country: 'IN',
-          },
-        };
-
-        const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-          body: { shipping_details }
-        });
-        
-        if (error) throw error;
+        // Edge function returns a 400 with a readable message on validation errors
+        const serverError = (data as any)?.error;
+        if (error || serverError) {
+          throw new Error(
+            serverError || error?.message || "Could not start the card payment."
+          );
+        }
 
         if (data?.url) {
           window.location.href = data.url;
-        } else {
-          toast({
-            title: "Error",
-            description: "Could not create payment session.",
-            variant: "destructive",
-          });
+          return;
         }
-      } else { // Cash on Delivery
-        const shipping_details = {
-          name: address.fullName,
-          phone: address.phone,
-          address: {
-            line1: address.street,
-            city: address.city,
-            state: address.state,
-            postal_code: address.zip,
-            country: 'IN',
-          },
-        };
-
-        console.log('Creating COD order with details:', {
-          p_customer_id: user.id,
-          p_shipping_details: shipping_details,
-          p_customer_phone: address.phone,
-          p_payment_method: 'cod'
-        });
-
-        const { error } = await supabase.rpc('create_orders_from_cart', {
-            p_customer_id: user.id,
-            p_shipping_details: shipping_details,
-            p_customer_phone: address.phone,
-            p_payment_method: 'cod'
-        });
-
-        if (error) {
-          console.error('COD order creation error:', error);
-          throw new Error(`Failed to create order: ${error.message}`);
-        }
-        
-        console.log('COD order created successfully');
-        toast({
-          title: "Order Placed!",
-          description: "Your order has been placed successfully. You can track it in your dashboard.",
-        });
-        setIsCheckoutOpen(false);
+        throw new Error("Payment session could not be created. Please try again.");
       }
-    } catch (error: any) {
-      console.error('Error during checkout:', error);
+
+      const { error } = await supabase.rpc("create_orders_from_cart", {
+        p_customer_id: user.id,
+        p_shipping_details: shipping_details,
+        p_customer_phone: form.phone,
+        p_payment_method: "cod",
+      });
+      if (error) throw new Error(error.message);
+
       toast({
-        title: "Error",
-        description: error?.message || "Failed to process order",
+        title: "Order placed!",
+        description: "Track it live under Track Orders.",
+      });
+      setIsCheckoutOpen(false);
+      await refresh();
+    } catch (error: any) {
+      console.error("Checkout failed:", error);
+      toast({
+        title: "Checkout failed",
+        description: error?.message || "Failed to process your order.",
         variant: "destructive",
       });
     } finally {
@@ -267,99 +78,121 @@ export function CartSidebar() {
     }
   };
 
-  const totalAmount = cartItems.reduce((sum, item) => {
-    const price = item.menu?.price || 0;
-    const quantity = item.quantity || 0;
-    return sum + (price * quantity);
-  }, 0);
-  
-  const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-
   return (
-    <div className="w-96 bg-white dark:bg-gray-800 border-l p-6 overflow-y-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5" />
-          Cart ({totalItems})
-        </h3>
-        {cartItems.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={clearCart}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-
-      {cartItems.length === 0 ? (
-        <div className="text-center py-12">
-          <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">Your cart is empty</p>
-          <p className="text-sm text-gray-500">Add some delicious meals!</p>
+    <aside className="w-full lg:w-96 lg:shrink-0">
+      <div className="glass rounded-3xl p-6 lg:sticky lg:top-24">
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-lg font-semibold">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <ShoppingCart className="h-4 w-4" />
+            </span>
+            Cart
+            <Badge variant="secondary" className="rounded-full">
+              {totalItems}
+            </Badge>
+          </h3>
+          {items.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clear}
+              className="rounded-xl text-muted-foreground hover:text-destructive"
+              aria-label="Clear cart"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-      ) : (
-        <div className="space-y-4">
-          {cartItems.map((item) => (
-            <div key={item.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium">{item.menu?.title || 'Unknown Item'}</h4>
-                <Badge variant="secondary" className="text-xs">
-                  {item.menu?.users?.full_name || 'Mom'}
-                </Badge>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-green-600 font-semibold">₹{item.menu?.price || 0}</span>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="font-medium">{item.quantity}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
+
+        {items.length === 0 ? (
+          <div className="py-12 text-center animate-fade-in">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+              <ShoppingCart className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <p className="font-medium">Your cart is empty</p>
+            <p className="text-sm text-muted-foreground">
+              Add some delicious meals to get started.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-2xl border border-border/60 bg-card/60 p-4 smooth-transition hover:border-primary/30 animate-fade-in"
+              >
+                <div className="mb-3 flex items-start justify-between gap-2">
+                  <h4 className="font-medium leading-tight">{item.title}</h4>
+                  <Badge variant="secondary" className="shrink-0 text-xs">
+                    {item.momName}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-primary">₹{item.price}</span>
+                  <div className="flex items-center gap-1 rounded-xl border border-border/60 p-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-lg"
+                      onClick={() => setQuantity(item.id, item.quantity - 1)}
+                      aria-label={`Decrease ${item.title}`}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="w-6 text-center text-sm font-semibold">
+                      {item.quantity}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-lg"
+                      onClick={() => setQuantity(item.id, item.quantity + 1)}
+                      aria-label={`Increase ${item.title}`}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-2 text-right text-sm text-muted-foreground">
+                  Subtotal ₹{(item.price * item.quantity).toFixed(2)}
                 </div>
               </div>
-              
-              <div className="text-right mt-2">
-                <span className="text-sm font-semibold">
-                  Total: ₹{((item.menu?.price || 0) * item.quantity).toFixed(2)}
-                </span>
+            ))}
+
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-lg font-bold">
+                <span>Total</span>
+                <span className="text-primary">₹{totalAmount.toFixed(2)}</span>
               </div>
+
+              <Button
+                onClick={() => setIsCheckoutOpen(true)}
+                disabled={items.length === 0 || loading}
+                className="btn-premium w-full rounded-xl bg-gradient-warm text-primary-foreground shadow-warm"
+              >
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <CreditCard className="mr-2 h-4 w-4" />
+                )}
+                Checkout
+              </Button>
             </div>
-          ))}
-          
-          <Separator />
-          
-          <div className="space-y-4">
-            <div className="flex justify-between items-center font-bold text-lg">
-              <span>Total Amount:</span>
-              <span className="text-green-600">₹{totalAmount.toFixed(2)}</span>
-            </div>
-            
-            <Button
-              onClick={() => setIsCheckoutOpen(true)}
-              disabled={cartItems.length === 0}
-              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-            >
-              <CreditCard className="h-4 w-4 mr-2" />
-              Checkout
-            </Button>
           </div>
-        </div>
-      )}
-      <CheckoutDialog 
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        onCheckout={checkout}
-        loading={loading}
-      />
-    </div>
+        )}
+
+        <CheckoutDialog
+          isOpen={isCheckoutOpen}
+          onClose={() => setIsCheckoutOpen(false)}
+          onCheckout={checkout}
+          loading={loading}
+          total={totalAmount}
+        />
+      </div>
+    </aside>
   );
 }
