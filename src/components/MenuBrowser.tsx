@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { SubscriptionDialog } from "./SubscriptionDialog";
+import { useCart } from "@/hooks/useCart";
 
 interface MenuItem {
   id: string;
@@ -64,9 +65,14 @@ const StarDisplay = ({ rating, count }: { rating: number; count: number }) => {
 export function MenuBrowser() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const {
+    items: cartItems,
+    refresh: refreshCart,
+    addItem,
+    setQuantity: setCartQuantity,
+  } = useCart();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [ratings, setRatings] = useState<Rating[]>([]);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
@@ -136,22 +142,8 @@ export function MenuBrowser() {
   }, [toast]);
 
   const fetchCartItems = useCallback(async () => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase.rpc('get_user_cart', {
-        user_id: user.id
-      });
-      
-      if (error) {
-        console.error('Error fetching cart items:', error);
-        return;
-      }
-      
-      setCartItems(data || []);
-    } catch (error) {
-      console.error('Error fetching cart items:', error);
-    }
-  }, [user]);
+    await refreshCart();
+  }, [refreshCart]);
 
   useEffect(() => {
     if (user) {
@@ -197,56 +189,11 @@ export function MenuBrowser() {
 
   const addToCart = async (menuItem: MenuItem) => {
     if (!user) return;
-    try {
-      const { error } = await supabase.rpc('add_to_cart', {
-        p_customer_id: user.id,
-        p_menu_item_id: menuItem.id,
-        p_quantity: 1
-      });
-      
-      if (error) throw error;
-      
-      fetchCartItems();
-      toast({
-        title: "Added to Cart",
-        description: `${menuItem.title} added to your cart`,
-      });
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add item to cart",
-        variant: "destructive",
-      });
-    }
+    await addItem(menuItem.id, menuItem.title);
   };
 
   const updateCartQuantity = async (cartItemId: string, newQuantity: number) => {
-    try {
-      if (newQuantity <= 0) {
-        const { error } = await supabase.rpc('remove_from_cart', {
-          cart_item_id: cartItemId
-        });
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.rpc('update_cart_quantity', {
-          cart_item_id: cartItemId,
-          new_quantity: newQuantity
-        });
-        
-        if (error) throw error;
-      }
-      
-      fetchCartItems();
-    } catch (error) {
-      console.error('Error updating cart:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update cart",
-        variant: "destructive",
-      });
-    }
+    await setCartQuantity(cartItemId, newQuantity);
   };
 
   const getCartQuantity = (menuId: string) => {

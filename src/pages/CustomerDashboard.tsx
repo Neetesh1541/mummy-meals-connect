@@ -6,6 +6,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Clock, MessageSquare, Home, Repeat } from "lucide-react";
 import { MySubscriptions } from "@/components/MySubscriptions";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { CartProvider } from "@/hooks/useCart";
 import {
   DashboardTabsList,
   DashboardTabsTrigger,
@@ -18,6 +19,7 @@ export default function CustomerDashboard() {
       title="Welcome to your food paradise"
       subtitle="Discover delicious home-cooked meals from local moms, track your orders live, and manage your subscriptions."
     >
+      <CartProvider>
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="min-w-0 flex-1">
           <Tabs defaultValue="browse" className="w-full">
@@ -63,6 +65,7 @@ export default function CustomerDashboard() {
 
         <CartSidebar />
       </div>
+      </CartProvider>
     </DashboardShell>
   );
 }

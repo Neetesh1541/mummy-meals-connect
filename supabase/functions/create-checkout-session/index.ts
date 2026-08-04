@@ -11,6 +11,7 @@ const corsHeaders = {
 
 // Validate shipping details schema
 const ShippingDetailsSchema = z.object({
+  name: z.string().min(2).max(120).optional(),
   address: z.string().min(5, "Address must be at least 5 characters").max(300, "Address too long"),
   city: z.string().min(2, "City must be at least 2 characters").max(100, "City name too long"),
   state: z.string().min(2, "State must be at least 2 characters").max(100, "State name too long"),
