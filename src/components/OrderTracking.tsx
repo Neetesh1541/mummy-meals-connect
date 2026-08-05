@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,17 @@ import { Order } from "@/types/order";
 import { useToast } from "@/hooks/use-toast";
 import { getStatusClassNames } from "@/lib/status-colors";
 import { useNotifications } from "@/hooks/useNotifications";
+import { OrderStatusTimeline, ORDER_STATUS_LABELS } from "./OrderStatusTimeline";
+import { LiveIndicator, LiveStatus } from "./LiveIndicator";
+
 
 export function OrderTracking() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [now, setNow] = useState(new Date());
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>("connecting");
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const prevStatuses = useRef<Record<string, string>>({});
   const { toast } = useToast();
   const { 
     permission: notificationPermission, 
@@ -29,10 +35,11 @@ export function OrderTracking() {
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(new Date());
-    }, 60000); // update every minute
+    }, 10000);
 
     return () => clearInterval(timer);
   }, []);
+
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
@@ -62,101 +69,117 @@ export function OrderTracking() {
         throw error;
       }
       
-      console.log('OrderTracking: Orders fetched successfully:', data?.length || 0);
-      setOrders(data as Order[] || []);
+      const next = (data as Order[]) || [];
+
+      // Diff statuses so notifications fire whether the update arrived via
+      // realtime or via the polling fallback.
+      const seen = prevStatuses.current;
+      if (Object.keys(seen).length > 0) {
+        next.forEach((order) => {
+          const before = seen[order.id];
+          if (before && before !== order.status) {
+            toast({
+              title: "Order update",
+              description: `${order.menu?.title ?? "Your order"} · ${
+                ORDER_STATUS_LABELS[order.status] ?? order.status
+              }`,
+            });
+            notifyOrderUpdate(order.status);
+          }
+        });
+      }
+      prevStatuses.current = Object.fromEntries(next.map((o) => [o.id, o.status]));
+
+      setOrders(next);
+      setLastSync(new Date());
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch orders. Please refresh the page.",
+        description: "Failed to fetch orders. Please try again.",
         variant: "destructive",
       });
     }
-  }, [user, toast]);
+  }, [user, toast, notifyOrderUpdate]);
 
   useEffect(() => {
-    if (user) {
-      fetchOrders();
-      
-      // Set up real-time subscription for customer's orders
-      const channel = supabase
-        .channel(`order-tracking-${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-            filter: `customer_id=eq.${user.id}`,
-          },
-          (payload) => {
-            console.log('OrderTracking: Order change received!', payload);
-            
-            // Show meaningful toast messages for different status changes
-            if (payload.eventType === 'UPDATE') {
-              const newData = payload.new as any;
-              const oldData = payload.old as any;
-              
-              if (newData.status !== oldData.status) {
-                let message = "Your order has been updated.";
-                
-                switch (newData.status) {
-                  case 'preparing':
-                    message = "Your order is being prepared!";
-                    break;
-                  case 'ready':
-                    message = "Your order is ready for pickup!";
-                    break;
-                  case 'picked_up':
-                    message = "Your order is out for delivery!";
-                    break;
-                  case 'delivered':
-                    message = "Your order has been delivered!";
-                    break;
-                }
-                
-                toast({
-                  title: "Order Update",
-                  description: message,
-                });
-                
-                // Send push notification
-                notifyOrderUpdate(newData.status);
-              }
-              
-              // If delivery partner was assigned
-              if (!oldData.delivery_partner_id && newData.delivery_partner_id) {
-                toast({
-                  title: "Delivery Partner Assigned",
-                  description: "A delivery partner has been assigned to your order.",
-                });
-                notifyDeliveryPartnerAssigned();
-              }
-            }
-            
-            fetchOrders();
-          }
-        )
-        .subscribe((status, err) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`Successfully subscribed to order tracking for user ${user.id}`);
-          }
-          if (status === 'CHANNEL_ERROR') {
-            console.error(`Subscription error for order tracking for user ${user.id}:`, err);
-            toast({
-              title: "Connection Error",
-              description: "Could not get live order updates. Please refresh the page.",
-              variant: "destructive"
-            });
-          }
-        });
+    if (!user) return;
 
-      return () => {
-        console.log('Cleaning up order tracking subscription');
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user, fetchOrders, toast, notifyOrderUpdate, notifyDeliveryPartnerAssigned]);
+    fetchOrders();
+
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    const startPolling = () => {
+      if (pollTimer) return;
+      setLiveStatus("polling");
+      pollTimer = setInterval(fetchOrders, 15000);
+    };
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    // If realtime hasn't connected within 6s, fall back to polling.
+    const fallbackTimer = setTimeout(startPolling, 6000);
+
+    const channel = supabase
+      .channel(`order-tracking-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `customer_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newData = payload.new as any;
+          const oldData = payload.old as any;
+          if (payload.eventType === 'UPDATE' && newData && oldData) {
+            if (!oldData.delivery_partner_id && newData.delivery_partner_id) {
+              toast({
+                title: "Delivery partner assigned",
+                description: "Someone is on the way to pick up your order.",
+              });
+              notifyDeliveryPartnerAssigned();
+            }
+          }
+          fetchOrders();
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          clearTimeout(fallbackTimer);
+          stopPolling();
+          setLiveStatus("live");
+          fetchOrders();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          startPolling();
+        }
+      });
+
+    // Refresh whenever the tab regains focus.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fetchOrders();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearTimeout(fallbackTimer);
+      stopPolling();
+      document.removeEventListener('visibilitychange', onVisible);
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchOrders, toast, notifyDeliveryPartnerAssigned]);
+
+  const syncedAgo = lastSync
+    ? (() => {
+        const s = Math.max(0, Math.round((now.getTime() - lastSync.getTime()) / 1000));
+        return s < 60 ? `updated ${s}s ago` : `updated ${Math.round(s / 60)}m ago`;
+      })()
+    : undefined;
+
 
   const getStatusIcon = (status: string) => {
     const iconColor = getStatusClassNames(status).text;
@@ -197,65 +220,76 @@ export function OrderTracking() {
 
   const formatAddress = (address: any) => {
     if (!address) return 'Not provided';
-    const { line1, city, state, postal_code } = address;
-    return [line1, city, state, postal_code].filter(Boolean).join(', ');
+    if (typeof address === 'string') return address;
+    const { line1, address: addr, city, state, postal_code, pincode } = address;
+    return [line1 ?? addr, city, state, postal_code ?? pincode].filter(Boolean).join(', ') || 'Not provided';
   };
 
   return (
     <div className="space-y-6">
-      {/* Header with notification toggle */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Order Tracking</h2>
+      {/* Header with realtime indicator + notification toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight">Order tracking</h2>
+          <LiveIndicator status={liveStatus} lastUpdatedAgo={syncedAgo} />
+        </div>
         <Button
           variant="outline"
           size="sm"
           onClick={requestPermission}
-          className={`gap-2 rounded-xl ${notificationPermission === 'granted' ? 'text-green-600 border-green-200 bg-green-50' : ''}`}
+          className={`gap-2 rounded-xl ${notificationPermission === 'granted' ? 'border-secondary/40 bg-secondary/10 text-secondary' : ''}`}
         >
           {notificationPermission === 'granted' ? (
             <>
               <Bell className="h-4 w-4" />
-              <span className="hidden sm:inline">Notifications On</span>
+              <span className="hidden sm:inline">Notifications on</span>
             </>
           ) : (
             <>
               <BellOff className="h-4 w-4" />
-              <span className="hidden sm:inline">Enable Notifications</span>
+              <span className="hidden sm:inline">Enable notifications</span>
             </>
           )}
         </Button>
       </div>
       
       {orders.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <MapPin className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
-            <p className="text-gray-600">Place your first order to start tracking!</p>
+        <Card className="rounded-3xl border-dashed">
+          <CardContent className="flex flex-col items-center py-14 text-center">
+            <div className="mb-4 rounded-2xl bg-primary/10 p-4">
+              <MapPin className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="mb-1 text-lg font-semibold">No orders yet</h3>
+            <p className="text-sm text-muted-foreground">Place your first order to start live tracking.</p>
           </CardContent>
         </Card>
       ) : (
+
         <div className="space-y-4">
           {orders.map((order) => (
-            <Card key={order.id} className="animate-fade-in">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{order.menu.title}</CardTitle>
+            <Card key={order.id} className="animate-fade-up overflow-hidden rounded-3xl border-border/60 shadow-warm smooth-transition hover:shadow-warm-lg">
+              <CardHeader className="bg-muted/30 pb-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <CardTitle className="truncate text-lg">{order.menu.title}</CardTitle>
                     <CardDescription>
-                      From {order.mom?.full_name} • Quantity: {order.quantity}
+                      From {order.mom?.full_name} • Qty {order.quantity}
                     </CardDescription>
                   </div>
                   <div className="flex flex-col items-end gap-2 text-right">
-                    <Badge className={`flex items-center gap-1 capitalize ${getStatusClassNames(order.status).badge}`}>
+                    <Badge className={`flex items-center gap-1.5 ${getStatusClassNames(order.status).badge}`}>
                       {getStatusIcon(order.status)}
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')}
+                      {ORDER_STATUS_LABELS[order.status] ?? order.status}
                     </Badge>
                     {renderTimeRemaining(order)}
                   </div>
                 </div>
+                <div className="pt-4">
+                  <OrderStatusTimeline status={order.status} />
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
+
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-lg font-semibold text-green-600">
                     ₹{order.total_amount}
@@ -334,31 +368,16 @@ export function OrderTracking() {
                 
                 <Collapsible className="mt-4">
                   <CollapsibleTrigger asChild>
-                    <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                    <Button variant="outline" className="flex w-full items-center justify-center gap-2 rounded-xl">
                       <MessageSquare className="h-4 w-4" />
                       <span>Chat about this order</span>
                     </Button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-4">
+                  <CollapsibleContent className="mt-4 animate-fade-in">
                     <ChatBox orderId={order.id} />
                   </CollapsibleContent>
                 </Collapsible>
-                
-                <div className="mt-4 flex space-x-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div className={`flex-1 ${['placed', 'preparing', 'ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
-                  <div className={`flex-1 ${['preparing', 'ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
-                  <div className={`flex-1 ${['ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
-                  <div className={`flex-1 ${['picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
-                  <div className={`flex-1 ${order.status === 'delivered' ? 'bg-green-500' : 'bg-gray-200'}`} />
-                </div>
-                
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>Placed</span>
-                  <span>Preparing</span>
-                  <span>Ready</span>
-                  <span>Out for delivery</span>
-                  <span>Delivered</span>
-                </div>
+
               </CardContent>
             </Card>
           ))}

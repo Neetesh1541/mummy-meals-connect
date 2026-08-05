@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/useAuth";
+
 
 // Eager load the main landing page for fast initial render
 import Index from "./pages/Index";
@@ -25,12 +26,11 @@ const PaymentCancel = lazy(() => import("./pages/PaymentCancel"));
 // Notification banner (loaded lazily)
 const NotificationBanner = lazy(() => import("./components/NotificationBanner").then(m => ({ default: m.NotificationBanner })));
 
-// Loading fallback component
-const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
+import { LoadingScreen } from "./components/LoadingScreen";
+
+// Branded loading fallback
+const PageLoader = () => <LoadingScreen label="Plating up your page…" />;
+
 
 // Optimized QueryClient with caching
 const queryClient = new QueryClient({
@@ -44,6 +44,20 @@ const queryClient = new QueryClient({
   },
 });
 
+function BootSplash({ children }: { children: React.ReactNode }) {
+  const [booting, setBooting] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setBooting(false), 1200);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <>
+      {booting && <LoadingScreen />}
+      <div className={booting ? "invisible" : "animate-fade-in"}>{children}</div>
+    </>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -54,7 +68,9 @@ const App = () => (
           <Suspense fallback={null}>
             <NotificationBanner />
           </Suspense>
+          <BootSplash>
           <BrowserRouter>
+
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -72,6 +88,8 @@ const App = () => (
               </Routes>
             </Suspense>
           </BrowserRouter>
+          </BootSplash>
+
         </TooltipProvider>
       </AuthProvider>
     </ThemeProvider>
