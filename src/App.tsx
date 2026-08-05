@@ -25,12 +25,11 @@ const PaymentCancel = lazy(() => import("./pages/PaymentCancel"));
 // Notification banner (loaded lazily)
 const NotificationBanner = lazy(() => import("./components/NotificationBanner").then(m => ({ default: m.NotificationBanner })));
 
-// Loading fallback component
-const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
+import { LoadingScreen } from "./components/LoadingScreen";
+
+// Branded loading fallback
+const PageLoader = () => <LoadingScreen label="Plating up your page…" />;
+
 
 // Optimized QueryClient with caching
 const queryClient = new QueryClient({
