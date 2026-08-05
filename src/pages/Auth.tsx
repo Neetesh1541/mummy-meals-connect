@@ -298,29 +298,55 @@ export default function Auth() {
                 </div>
               )}
               {needsConfirmation && (
-                <div className="space-y-3 rounded-xl border border-primary/30 bg-primary/10 p-4">
-                  <div className="flex items-start gap-2">
-                    <MailCheck className="mt-0.5 h-5 w-5 text-primary" />
+                <div className="animate-fade-up space-y-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 rounded-xl bg-primary/15 p-2">
+                      <MailCheck className="h-5 w-5 text-primary" />
+                    </span>
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold">Confirm your email to continue</p>
+                      <p className="text-sm font-semibold">Confirm your email to sign in</p>
                       <p className="text-xs text-muted-foreground">
-                        We sent a confirmation link{formData.email ? ` to ${formData.email}` : ""}. Click it, then sign in.
-                        Check your spam folder if you don't see it.
+                        We sent a confirmation link{formData.email ? ` to ${formData.email}` : ""}.
                       </p>
                     </div>
                   </div>
+
+                  <ol className="space-y-1.5 pl-1 text-xs text-muted-foreground">
+                    <li className="flex gap-2">
+                      <span className="font-semibold text-primary">1.</span>
+                      Open your inbox and find the “Confirm your email” message from Mummy Meals.
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-semibold text-primary">2.</span>
+                      Tap the confirmation link — it opens this app and verifies you automatically.
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="font-semibold text-primary">3.</span>
+                      Come back here and sign in with the same email and password.
+                    </li>
+                  </ol>
+
+                  <p className="text-[11px] text-muted-foreground">
+                    Nothing yet? Check spam/promotions, and make sure the address above is spelled correctly.
+                  </p>
+
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="w-full rounded-xl"
                     onClick={handleResend}
-                    disabled={resending}
+                    disabled={resending || resendCooldown > 0}
                   >
-                    {resending ? "Sending..." : "Resend confirmation email"}
+                    {resending
+                      ? "Sending…"
+                      : resendCooldown > 0
+                        ? `Resend available in ${resendCooldown}s`
+                        : "Resend confirmation email"}
                   </Button>
                 </div>
               )}
+
               {authMode === "signup" && (
                 <div className="space-y-4">
                   <Label className="text-base font-medium">Choose your role:</Label>
