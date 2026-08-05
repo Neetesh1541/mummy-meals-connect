@@ -88,6 +88,8 @@ const App = () => (
               </Routes>
             </Suspense>
           </BrowserRouter>
+          </BootSplash>
+
         </TooltipProvider>
       </AuthProvider>
     </ThemeProvider>
