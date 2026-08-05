@@ -48,6 +48,14 @@ export default function Auth() {
     }
   }, [user, navigate, showResetPassword]);
 
+  // Resend cooldown ticker
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+
   // Handle URL parameters for email confirmation and password reset
   useEffect(() => {
     const type = searchParams.get('type');
