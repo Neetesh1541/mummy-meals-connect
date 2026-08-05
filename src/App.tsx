@@ -44,7 +44,22 @@ const queryClient = new QueryClient({
   },
 });
 
+function BootSplash({ children }: { children: React.ReactNode }) {
+  const [booting, setBooting] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setBooting(false), 1200);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <>
+      {booting && <LoadingScreen />}
+      <div className={booting ? "invisible" : "animate-fade-in"}>{children}</div>
+    </>
+  );
+}
+
 const App = () => (
+
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
