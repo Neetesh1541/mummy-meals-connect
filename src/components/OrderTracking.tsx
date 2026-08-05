@@ -69,101 +69,117 @@ export function OrderTracking() {
         throw error;
       }
       
-      console.log('OrderTracking: Orders fetched successfully:', data?.length || 0);
-      setOrders(data as Order[] || []);
+      const next = (data as Order[]) || [];
+
+      // Diff statuses so notifications fire whether the update arrived via
+      // realtime or via the polling fallback.
+      const seen = prevStatuses.current;
+      if (Object.keys(seen).length > 0) {
+        next.forEach((order) => {
+          const before = seen[order.id];
+          if (before && before !== order.status) {
+            toast({
+              title: "Order update",
+              description: `${order.menu?.title ?? "Your order"} · ${
+                ORDER_STATUS_LABELS[order.status] ?? order.status
+              }`,
+            });
+            notifyOrderUpdate(order.status);
+          }
+        });
+      }
+      prevStatuses.current = Object.fromEntries(next.map((o) => [o.id, o.status]));
+
+      setOrders(next);
+      setLastSync(new Date());
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch orders. Please refresh the page.",
+        description: "Failed to fetch orders. Please try again.",
         variant: "destructive",
       });
     }
-  }, [user, toast]);
+  }, [user, toast, notifyOrderUpdate]);
 
   useEffect(() => {
-    if (user) {
-      fetchOrders();
-      
-      // Set up real-time subscription for customer's orders
-      const channel = supabase
-        .channel(`order-tracking-${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'orders',
-            filter: `customer_id=eq.${user.id}`,
-          },
-          (payload) => {
-            console.log('OrderTracking: Order change received!', payload);
-            
-            // Show meaningful toast messages for different status changes
-            if (payload.eventType === 'UPDATE') {
-              const newData = payload.new as any;
-              const oldData = payload.old as any;
-              
-              if (newData.status !== oldData.status) {
-                let message = "Your order has been updated.";
-                
-                switch (newData.status) {
-                  case 'preparing':
-                    message = "Your order is being prepared!";
-                    break;
-                  case 'ready':
-                    message = "Your order is ready for pickup!";
-                    break;
-                  case 'picked_up':
-                    message = "Your order is out for delivery!";
-                    break;
-                  case 'delivered':
-                    message = "Your order has been delivered!";
-                    break;
-                }
-                
-                toast({
-                  title: "Order Update",
-                  description: message,
-                });
-                
-                // Send push notification
-                notifyOrderUpdate(newData.status);
-              }
-              
-              // If delivery partner was assigned
-              if (!oldData.delivery_partner_id && newData.delivery_partner_id) {
-                toast({
-                  title: "Delivery Partner Assigned",
-                  description: "A delivery partner has been assigned to your order.",
-                });
-                notifyDeliveryPartnerAssigned();
-              }
-            }
-            
-            fetchOrders();
-          }
-        )
-        .subscribe((status, err) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`Successfully subscribed to order tracking for user ${user.id}`);
-          }
-          if (status === 'CHANNEL_ERROR') {
-            console.error(`Subscription error for order tracking for user ${user.id}:`, err);
-            toast({
-              title: "Connection Error",
-              description: "Could not get live order updates. Please refresh the page.",
-              variant: "destructive"
-            });
-          }
-        });
+    if (!user) return;
 
-      return () => {
-        console.log('Cleaning up order tracking subscription');
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user, fetchOrders, toast, notifyOrderUpdate, notifyDeliveryPartnerAssigned]);
+    fetchOrders();
+
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    const startPolling = () => {
+      if (pollTimer) return;
+      setLiveStatus("polling");
+      pollTimer = setInterval(fetchOrders, 15000);
+    };
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    // If realtime hasn't connected within 6s, fall back to polling.
+    const fallbackTimer = setTimeout(startPolling, 6000);
+
+    const channel = supabase
+      .channel(`order-tracking-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `customer_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newData = payload.new as any;
+          const oldData = payload.old as any;
+          if (payload.eventType === 'UPDATE' && newData && oldData) {
+            if (!oldData.delivery_partner_id && newData.delivery_partner_id) {
+              toast({
+                title: "Delivery partner assigned",
+                description: "Someone is on the way to pick up your order.",
+              });
+              notifyDeliveryPartnerAssigned();
+            }
+          }
+          fetchOrders();
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          clearTimeout(fallbackTimer);
+          stopPolling();
+          setLiveStatus("live");
+          fetchOrders();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          startPolling();
+        }
+      });
+
+    // Refresh whenever the tab regains focus.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fetchOrders();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearTimeout(fallbackTimer);
+      stopPolling();
+      document.removeEventListener('visibilitychange', onVisible);
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchOrders, toast, notifyDeliveryPartnerAssigned]);
+
+  const syncedAgo = lastSync
+    ? (() => {
+        const s = Math.max(0, Math.round((now.getTime() - lastSync.getTime()) / 1000));
+        return s < 60 ? `updated ${s}s ago` : `updated ${Math.round(s / 60)}m ago`;
+      })()
+    : undefined;
+
 
   const getStatusIcon = (status: string) => {
     const iconColor = getStatusClassNames(status).text;
