@@ -59,7 +59,6 @@ function BootSplash({ children }: { children: React.ReactNode }) {
 }
 
 const App = () => (
-
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
@@ -69,7 +68,9 @@ const App = () => (
           <Suspense fallback={null}>
             <NotificationBanner />
           </Suspense>
+          <BootSplash>
           <BrowserRouter>
+
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Index />} />
