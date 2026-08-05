@@ -368,31 +368,16 @@ export function OrderTracking() {
                 
                 <Collapsible className="mt-4">
                   <CollapsibleTrigger asChild>
-                    <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                    <Button variant="outline" className="flex w-full items-center justify-center gap-2 rounded-xl">
                       <MessageSquare className="h-4 w-4" />
                       <span>Chat about this order</span>
                     </Button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-4">
+                  <CollapsibleContent className="mt-4 animate-fade-in">
                     <ChatBox orderId={order.id} />
                   </CollapsibleContent>
                 </Collapsible>
-                
-                <div className="mt-4 flex space-x-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div className={`flex-1 ${['placed', 'preparing', 'ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
-                  <div className={`flex-1 ${['preparing', 'ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
-                  <div className={`flex-1 ${['ready', 'picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
-                  <div className={`flex-1 ${['picked_up', 'delivered'].includes(order.status) ? 'bg-green-500' : 'bg-gray-200'}`} />
-                  <div className={`flex-1 ${order.status === 'delivered' ? 'bg-green-500' : 'bg-gray-200'}`} />
-                </div>
-                
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>Placed</span>
-                  <span>Preparing</span>
-                  <span>Ready</span>
-                  <span>Out for delivery</span>
-                  <span>Delivered</span>
-                </div>
+
               </CardContent>
             </Card>
           ))}
