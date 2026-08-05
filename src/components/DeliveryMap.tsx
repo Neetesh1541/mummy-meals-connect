@@ -70,44 +70,64 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
   const [location, setLocation] = useState<Location | null>(null);
   const [locationHistory, setLocationHistory] = useState<Location[]>([]);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>('connecting');
+  const [tick, setTick] = useState(0);
 
   const truckIcon = useMemo(() => createTruckIcon(), []);
   const destinationIcon = useMemo(() => createDestinationIcon(), []);
 
-  // Fetch initial location
-  useEffect(() => {
-    const fetchInitialLocation = async () => {
-      console.log('DeliveryMap: Fetching initial location for partner:', deliveryPartnerId);
-      const { data, error } = await supabase
-        .from('delivery_partner_locations')
-        .select('latitude, longitude, updated_at')
-        .eq('partner_id', deliveryPartnerId)
-        .single();
+  const applyLocation = useCallback((lat: number, lng: number, updatedAt?: string | null) => {
+    const loc = { latitude: Number(lat), longitude: Number(lng), timestamp: updatedAt ?? null };
+    setLocation((prev) =>
+      prev && prev.latitude === loc.latitude && prev.longitude === loc.longitude ? prev : loc
+    );
+    setLocationHistory((prev) => {
+      const last = prev[prev.length - 1];
+      if (last && last.latitude === loc.latitude && last.longitude === loc.longitude) return prev;
+      return [...prev, loc].slice(-20);
+    });
+    setLastUpdate(updatedAt ? new Date(updatedAt) : new Date());
+  }, []);
 
-      if (data) {
-        console.log('DeliveryMap: Initial location found:', data);
-        const loc = {
-          latitude: Number(data.latitude),
-          longitude: Number(data.longitude),
-          timestamp: data.updated_at,
-        };
-        setLocation(loc);
-        setLocationHistory([loc]);
-        if (data.updated_at) {
-          setLastUpdate(new Date(data.updated_at));
-        }
-      } else if (error) {
-        console.error('DeliveryMap: Error fetching initial location:', error.message);
+  const fetchLocation = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('delivery_partner_locations')
+      .select('latitude, longitude, updated_at')
+      .eq('partner_id', deliveryPartnerId)
+      .maybeSingle();
+
+    if (data) {
+      applyLocation(data.latitude as number, data.longitude as number, data.updated_at);
+    } else if (error) {
+      console.error('DeliveryMap: Error fetching location:', error.message);
+    }
+  }, [deliveryPartnerId, applyLocation]);
+
+  // Keep the "updated Xs ago" label accurate.
+  useEffect(() => {
+    const t = setInterval(() => setTick((v) => v + 1), 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Realtime with polling fallback
+  useEffect(() => {
+    fetchLocation();
+
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    const startPolling = () => {
+      if (pollTimer) return;
+      setLiveStatus('polling');
+      pollTimer = setInterval(fetchLocation, 10000);
+    };
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
       }
     };
-    fetchInitialLocation();
-  }, [deliveryPartnerId]);
 
-  // Real-time location subscription
-  useEffect(() => {
-    console.log('DeliveryMap: Setting up real-time location subscription for partner:', deliveryPartnerId);
-    
+    const fallbackTimer = setTimeout(startPolling, 6000);
+
     const channel = supabase
       .channel(`live-delivery-${deliveryPartnerId}`)
       .on(
@@ -119,47 +139,43 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
           filter: `partner_id=eq.${deliveryPartnerId}`,
         },
         (payload) => {
-          console.log('DeliveryMap: Real-time location update received:', payload);
           const newData = payload.new as { latitude: number; longitude: number; updated_at: string };
-          
-          if (newData.latitude && newData.longitude) {
-            const newLoc = {
-              latitude: Number(newData.latitude),
-              longitude: Number(newData.longitude),
-              timestamp: newData.updated_at,
-            };
-            
-            setLocation(newLoc);
-            setLocationHistory(prev => {
-              const updated = [...prev, newLoc];
-              // Keep last 20 points for trail
-              return updated.slice(-20);
-            });
-            if (newData.updated_at) {
-              setLastUpdate(new Date(newData.updated_at));
-            }
+          if (newData?.latitude && newData?.longitude) {
+            applyLocation(newData.latitude, newData.longitude, newData.updated_at);
           }
         }
       )
-      .subscribe((status, err) => {
+      .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('DeliveryMap: Successfully subscribed to live location updates');
-          setIsConnected(true);
-        }
-        if (status === 'CHANNEL_ERROR') {
-          console.error('DeliveryMap: Subscription error:', err);
-          setIsConnected(false);
-        }
-        if (status === 'CLOSED') {
-          setIsConnected(false);
+          clearTimeout(fallbackTimer);
+          stopPolling();
+          setLiveStatus('live');
+          fetchLocation();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          startPolling();
         }
       });
 
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fetchLocation();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
-      console.log('DeliveryMap: Cleaning up location subscription');
+      clearTimeout(fallbackTimer);
+      stopPolling();
+      document.removeEventListener('visibilitychange', onVisible);
       supabase.removeChannel(channel);
     };
-  }, [deliveryPartnerId]);
+  }, [deliveryPartnerId, fetchLocation, applyLocation]);
+
+  const updatedAgo = useMemo(() => {
+    if (!lastUpdate) return undefined;
+    void tick;
+    const s = Math.max(0, Math.round((Date.now() - lastUpdate.getTime()) / 1000));
+    return s < 60 ? `${s}s ago` : `${Math.round(s / 60)}m ago`;
+  }, [lastUpdate, tick]);
+
 
   // Generate trail path from location history
   const trailPath = useMemo(() => {
