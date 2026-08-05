@@ -33,6 +33,8 @@ export default function Auth() {
   const [emailConfirmed, setEmailConfirmed] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
 
   const { user, signUp, signIn, resendConfirmation } = useAuth();
   const navigate = useNavigate();
@@ -144,10 +146,31 @@ export default function Auth() {
       });
       return;
     }
+    if (resendCooldown > 0) return;
     setResending(true);
-    await resendConfirmation(formData.email);
-    setResending(false);
+    try {
+      const result = await resendConfirmation(formData.email);
+      if (result?.error) throw result.error;
+      toast({
+        title: "Confirmation email sent",
+        description: `We sent a fresh link to ${formData.email}. It expires in 60 minutes.`,
+      });
+      setResendCooldown(60);
+    } catch (error: any) {
+      const message: string = error?.message ?? "Something went wrong. Please try again.";
+      toast({
+        title: "Couldn't send the email",
+        description: /rate|seconds|limit/i.test(message)
+          ? "Too many requests. Please wait a minute before trying again."
+          : message,
+        variant: "destructive"
+      });
+      setResendCooldown(30);
+    } finally {
+      setResending(false);
+    }
   };
+
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
