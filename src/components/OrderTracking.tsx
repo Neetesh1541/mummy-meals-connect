@@ -21,6 +21,9 @@ export function OrderTracking() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [now, setNow] = useState(new Date());
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>("connecting");
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+  const prevStatuses = useRef<Record<string, string>>({});
   const { toast } = useToast();
   const { 
     permission: notificationPermission, 
@@ -32,10 +35,11 @@ export function OrderTracking() {
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(new Date());
-    }, 60000); // update every minute
+    }, 10000);
 
     return () => clearInterval(timer);
   }, []);
+
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
