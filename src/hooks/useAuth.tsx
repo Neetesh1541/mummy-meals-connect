@@ -189,21 +189,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { emailRedirectTo: `${window.location.origin}/auth?type=signup` }
     });
 
-    if (error) {
-      toast({
-        title: "Couldn't resend",
-        description: error.message,
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Confirmation email sent",
-        description: `We sent a new confirmation link to ${email}.`
-      });
-    }
-
+    // Callers own the user-facing toast so it isn't shown twice.
     return { error };
-  }, [toast]);
+  }, []);
+
 
   const value = useMemo(() => ({
     user,
