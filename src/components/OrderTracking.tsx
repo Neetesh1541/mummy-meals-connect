@@ -220,44 +220,51 @@ export function OrderTracking() {
 
   const formatAddress = (address: any) => {
     if (!address) return 'Not provided';
-    const { line1, city, state, postal_code } = address;
-    return [line1, city, state, postal_code].filter(Boolean).join(', ');
+    if (typeof address === 'string') return address;
+    const { line1, address: addr, city, state, postal_code, pincode } = address;
+    return [line1 ?? addr, city, state, postal_code ?? pincode].filter(Boolean).join(', ') || 'Not provided';
   };
 
   return (
     <div className="space-y-6">
-      {/* Header with notification toggle */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Order Tracking</h2>
+      {/* Header with realtime indicator + notification toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight">Order tracking</h2>
+          <LiveIndicator status={liveStatus} lastUpdatedAgo={syncedAgo} />
+        </div>
         <Button
           variant="outline"
           size="sm"
           onClick={requestPermission}
-          className={`gap-2 rounded-xl ${notificationPermission === 'granted' ? 'text-green-600 border-green-200 bg-green-50' : ''}`}
+          className={`gap-2 rounded-xl ${notificationPermission === 'granted' ? 'border-secondary/40 bg-secondary/10 text-secondary' : ''}`}
         >
           {notificationPermission === 'granted' ? (
             <>
               <Bell className="h-4 w-4" />
-              <span className="hidden sm:inline">Notifications On</span>
+              <span className="hidden sm:inline">Notifications on</span>
             </>
           ) : (
             <>
               <BellOff className="h-4 w-4" />
-              <span className="hidden sm:inline">Enable Notifications</span>
+              <span className="hidden sm:inline">Enable notifications</span>
             </>
           )}
         </Button>
       </div>
       
       {orders.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <MapPin className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
-            <p className="text-gray-600">Place your first order to start tracking!</p>
+        <Card className="rounded-3xl border-dashed">
+          <CardContent className="flex flex-col items-center py-14 text-center">
+            <div className="mb-4 rounded-2xl bg-primary/10 p-4">
+              <MapPin className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="mb-1 text-lg font-semibold">No orders yet</h3>
+            <p className="text-sm text-muted-foreground">Place your first order to start live tracking.</p>
           </CardContent>
         </Card>
       ) : (
+
         <div className="space-y-4">
           {orders.map((order) => (
             <Card key={order.id} className="animate-fade-in">
