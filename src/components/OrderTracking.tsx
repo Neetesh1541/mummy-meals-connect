@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import { Order } from "@/types/order";
 import { useToast } from "@/hooks/use-toast";
 import { getStatusClassNames } from "@/lib/status-colors";
 import { useNotifications } from "@/hooks/useNotifications";
+import { OrderStatusTimeline, ORDER_STATUS_LABELS } from "./OrderStatusTimeline";
+import { LiveIndicator, LiveStatus } from "./LiveIndicator";
+
 
 export function OrderTracking() {
   const { user } = useAuth();
