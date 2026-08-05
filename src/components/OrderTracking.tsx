@@ -267,25 +267,29 @@ export function OrderTracking() {
 
         <div className="space-y-4">
           {orders.map((order) => (
-            <Card key={order.id} className="animate-fade-in">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{order.menu.title}</CardTitle>
+            <Card key={order.id} className="animate-fade-up overflow-hidden rounded-3xl border-border/60 shadow-warm smooth-transition hover:shadow-warm-lg">
+              <CardHeader className="bg-muted/30 pb-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <CardTitle className="truncate text-lg">{order.menu.title}</CardTitle>
                     <CardDescription>
-                      From {order.mom?.full_name} • Quantity: {order.quantity}
+                      From {order.mom?.full_name} • Qty {order.quantity}
                     </CardDescription>
                   </div>
                   <div className="flex flex-col items-end gap-2 text-right">
-                    <Badge className={`flex items-center gap-1 capitalize ${getStatusClassNames(order.status).badge}`}>
+                    <Badge className={`flex items-center gap-1.5 ${getStatusClassNames(order.status).badge}`}>
                       {getStatusIcon(order.status)}
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')}
+                      {ORDER_STATUS_LABELS[order.status] ?? order.status}
                     </Badge>
                     {renderTimeRemaining(order)}
                   </div>
                 </div>
+                <div className="pt-4">
+                  <OrderStatusTimeline status={order.status} />
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
+
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-lg font-semibold text-green-600">
                     ₹{order.total_amount}
