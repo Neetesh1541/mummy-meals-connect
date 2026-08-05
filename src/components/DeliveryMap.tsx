@@ -1,10 +1,12 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, Polyline, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
 import { Truck, Navigation, MapPin, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { LiveIndicator, LiveStatus } from '@/components/LiveIndicator';
+
 
 interface DeliveryMapProps {
   deliveryPartnerId: string;
