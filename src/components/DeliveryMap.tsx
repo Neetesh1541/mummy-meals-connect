@@ -208,22 +208,16 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
   return (
     <div className="space-y-3">
       {/* Status bar */}
-      <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
-          <span className="text-muted-foreground">
-            {isConnected ? 'Live tracking active' : 'Connecting...'}
-          </span>
-        </div>
-        {lastUpdate && (
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+        <LiveIndicator status={liveStatus} />
+        {updatedAgo && (
           <div className="flex items-center gap-1 text-muted-foreground">
             <Clock className="h-3 w-3" />
-            <span className="text-xs">
-              Updated {Math.round((Date.now() - lastUpdate.getTime()) / 1000)}s ago
-            </span>
+            <span className="text-xs">Updated {updatedAgo}</span>
           </div>
         )}
       </div>
+
 
       {/* Map container */}
       <div className="relative rounded-2xl overflow-hidden shadow-lg border border-border">
