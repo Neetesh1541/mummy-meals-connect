@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/useAuth";
+import { NotificationPreferencesProvider } from "@/hooks/useNotificationPreferences";
 
 
 // Eager load the main landing page for fast initial render
@@ -20,6 +21,7 @@ const CustomerDashboard = lazy(() => import("./pages/CustomerDashboard"));
 const MomDashboard = lazy(() => import("./pages/MomDashboard"));
 const DeliveryDashboard = lazy(() => import("./pages/DeliveryDashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCancel = lazy(() => import("./pages/PaymentCancel"));
 
@@ -62,6 +64,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
+        <NotificationPreferencesProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -81,6 +84,7 @@ const App = () => (
                 <Route path="/mom-dashboard" element={<MomDashboard />} />
                 <Route path="/delivery-dashboard" element={<DeliveryDashboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/settings/notifications" element={<NotificationSettings />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
                 <Route path="/payment-cancel" element={<PaymentCancel />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
@@ -91,6 +95,7 @@ const App = () => (
           </BootSplash>
 
         </TooltipProvider>
+        </NotificationPreferencesProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

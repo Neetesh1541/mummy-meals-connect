@@ -21,10 +21,10 @@ export function DashboardShell({
   maxWidth = "max-w-7xl",
 }: DashboardShellProps) {
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-dvh bg-background relative">
       <WavyBackground />
       <Header />
-      <main className="container py-8 relative z-10">
+      <main id="main-content" className="container py-8 relative z-10">
         <div className={`${maxWidth} mx-auto space-y-8`}>
           <section className="glass rounded-3xl px-6 py-8 md:px-10 md:py-10 animate-fade-up overflow-hidden relative">
             <div

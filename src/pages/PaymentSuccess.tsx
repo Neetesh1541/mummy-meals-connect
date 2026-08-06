@@ -40,7 +40,7 @@ export default function PaymentSuccess() {
   }, [searchParams]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <main id="main-content" className="min-h-dvh bg-background flex items-center justify-center p-4" aria-live="polite">
       <Card className="w-full max-w-md text-center shadow-lg animate-fade-in">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">
@@ -64,7 +64,7 @@ export default function PaymentSuccess() {
             <p className="text-destructive mt-4">
               There was an issue with your payment. Please try again from the cart.
               <br />
-              {error && <span className="text-sm font-mono p-2 bg-red-50 rounded-md block mt-2">Error: {error}</span>}
+              {error && <span className="text-sm font-mono p-2 bg-destructive/10 rounded-md block mt-2">Error: {error}</span>}
             </p>
           )}
           <Button asChild className="mt-6 w-full">
@@ -72,6 +72,6 @@ export default function PaymentSuccess() {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }

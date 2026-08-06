@@ -31,10 +31,10 @@ export function OrderCard({ order, isMyOrder, onAccept, onComplete, updatingOrde
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="text-lg">{order.menu.title}</CardTitle>
-            <div className="text-sm text-gray-500 mt-1">
+            <div className="text-sm text-muted-foreground mt-1">
               Order #{order.id.substring(0, 8)}
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               {new Date(order.created_at).toLocaleDateString()} at {new Date(order.created_at).toLocaleTimeString()}
             </div>
           </div>
@@ -65,14 +65,14 @@ export function OrderCard({ order, isMyOrder, onAccept, onComplete, updatingOrde
           Delivery Fee: ₹{order.delivery_fee || 40}
         </div>
         
-        <div className="text-xs text-gray-500 mb-4">
+        <div className="text-xs text-muted-foreground mb-4">
           Deliver to: {order.shipping_details?.name || 'Customer'}
         </div>
         
         <div className="border-t pt-4 mt-4 space-y-3">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-gray-500" />
+              <User className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold">Customer: {order.customer?.full_name}</span>
               {order.customer?.phone && (
                 <a href={`tel:${order.customer.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
@@ -82,14 +82,14 @@ export function OrderCard({ order, isMyOrder, onAccept, onComplete, updatingOrde
               )}
             </div>
             <div className="flex items-start gap-2 pl-6">
-              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
+              <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
               <span className="text-xs">{formatAddress(order.shipping_details?.address)}</span>
             </div>
           </div>
           
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-gray-500" />
+              <User className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold">Chef: {order.mom?.full_name}</span>
               {order.mom?.phone && (
                 <a href={`tel:${order.mom.phone}`} className="ml-auto flex items-center gap-1 text-blue-600 hover:underline">
@@ -99,7 +99,7 @@ export function OrderCard({ order, isMyOrder, onAccept, onComplete, updatingOrde
               )}
             </div>
             <div className="flex items-start gap-2 pl-6">
-              <MapPin className="h-4 w-4 text-gray-500 mt-1" />
+              <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
               <span className="text-xs">{formatAddress(order.mom?.address)}</span>
             </div>
           </div>

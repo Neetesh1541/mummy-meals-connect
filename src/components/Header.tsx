@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 import { AnimatedLogo } from "./AnimatedLogo";
-import { User, LogOut, Settings, Menu, X } from "lucide-react";
+import { User, LogOut, Settings, Menu, X, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
@@ -24,6 +24,8 @@ export function Header() {
   ];
 
   return (
+    <>
+    <a href="#main-content" className="skip-link">Skip to main content</a>
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-18 items-center justify-between py-3">
         <Link to="/" className="flex items-center">
@@ -71,6 +73,12 @@ export function Header() {
                     Profile Settings
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-lg">
+                  <Link to="/settings/notifications" className="w-full flex items-center gap-2">
+                    <Bell className="h-4 w-4" aria-hidden="true" />
+                    Notifications
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={signOut} className="rounded-lg text-destructive focus:text-destructive">
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
@@ -93,8 +101,11 @@ export function Header() {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="md:hidden rounded-xl"
+            className="md:hidden rounded-xl min-h-11 min-w-11"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -103,7 +114,7 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-xl animate-fade-in">
+        <div id="mobile-navigation" className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-xl animate-fade-in">
           <nav className="container py-4 flex flex-col space-y-1">
             {navLinks.map((link) => (
               <Link 
@@ -119,5 +130,6 @@ export function Header() {
         </div>
       )}
     </header>
+    </>
   );
 }

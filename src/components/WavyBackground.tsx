@@ -2,7 +2,7 @@ import { memo } from "react";
 
 export const WavyBackground = memo(function WavyBackground() {
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden premium-bg">
+    <div className="fixed inset-0 -z-10 overflow-hidden premium-bg" aria-hidden="true">
       {/* Floating gradient orbs */}
       <div className="floating-orb floating-orb-1" />
       <div className="floating-orb floating-orb-2" />

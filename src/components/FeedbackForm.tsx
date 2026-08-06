@@ -119,7 +119,7 @@ export function FeedbackForm() {
       </CardHeader>
       <CardContent className="space-y-4">
         {deliveredOrders.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">
+          <p className="text-muted-foreground text-center py-8">
             No delivered orders to review yet
           </p>
         ) : (
@@ -147,7 +147,7 @@ export function FeedbackForm() {
                   <Star
                     key={star}
                     className={`h-6 w-6 cursor-pointer ${
-                      star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                      star <= rating ? 'text-yellow-400 fill-current' : 'text-muted-foreground/30'
                     }`}
                     onClick={() => setRating(star)}
                   />

@@ -306,16 +306,16 @@ export function OrderTracking() {
                             Paid Online
                         </Badge>
                     )}
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-muted-foreground">
                         {new Date(order.created_at).toLocaleDateString()}
                     </span>
                    </div>
                 </div>
                 
-                <div className="space-y-4 text-sm text-gray-600 border-t pt-4 mt-4">
+                <div className="space-y-4 text-sm text-muted-foreground border-t pt-4 mt-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-500" />
+                      <User className="h-4 w-4 text-muted-foreground" />
                       <span className="font-semibold">Chef: {order.mom?.full_name}</span>
                       <div className="ml-auto flex items-center gap-2">
                         {order.mom?.phone ? (
@@ -332,7 +332,7 @@ export function OrderTracking() {
                       </div>
                     </div>
                      <div className="flex items-start gap-2 pl-6">
-                        <MapPin className="h-4 w-4 text-gray-500 mt-1" />
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
                         <span>{formatAddress(order.mom?.address)}</span>
                     </div>
                   </div>
@@ -340,7 +340,7 @@ export function OrderTracking() {
                   {order.delivery_partner && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Truck className="h-4 w-4 text-gray-500" />
+                        <Truck className="h-4 w-4 text-muted-foreground" />
                         <span className="font-semibold">Delivery: {order.delivery_partner.full_name}</span>
                         <div className="ml-auto flex items-center gap-2">
                           {order.delivery_partner.phone ? (

@@ -37,9 +37,9 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <Header />
-      <main className="container py-20">
+      <main id="main-content" className="container py-20">
         <div className="max-w-4xl mx-auto">
           <div className="text-center space-y-6 mb-16 animate-fade-in-up">
             <h1 className="font-poppins font-bold text-4xl md:text-5xl">
