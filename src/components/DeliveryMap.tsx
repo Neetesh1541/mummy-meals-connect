@@ -235,11 +235,21 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
           </div>
         </div>
         <div>
-          <p className="font-medium text-foreground">Locating delivery partner...</p>
+          <p className="font-medium text-foreground">
+            {fetchError ? "Couldn't reach live tracking" : 'Locating delivery partner...'}
+          </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Live tracking will appear once location is shared
+            {fetchError
+              ? 'Check your connection — we keep retrying automatically.'
+              : 'Live tracking will appear once location is shared'}
           </p>
         </div>
+        {fetchError && (
+          <Button variant="outline" size="sm" className="gap-2 rounded-xl" onClick={fetchLocation}>
+            <RefreshCw className="h-3.5 w-3.5" />
+            Retry now
+          </Button>
+        )}
       </div>
     );
   }
@@ -252,12 +262,30 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <LiveIndicator status={liveStatus} />
         {updatedAgo && (
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className={`flex items-center gap-1 ${isStale ? 'text-destructive' : 'text-muted-foreground'}`}>
             <Clock className="h-3 w-3" />
-            <span className="text-xs">Updated {updatedAgo}</span>
+            <span className="text-xs">Last updated {updatedAgo}</span>
           </div>
         )}
       </div>
+
+      {(fetchError || isStale) && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
+          <div className="flex items-center gap-2 text-xs text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              {fetchError
+                ? "Can't reach the server — showing the last known position."
+                : "GPS signal looks weak — this position hasn't moved recently."}
+            </span>
+          </div>
+          <Button variant="ghost" size="sm" className="h-7 gap-1.5 rounded-lg text-xs" onClick={fetchLocation}>
+            <RefreshCw className="h-3 w-3" />
+            Refresh
+          </Button>
+        </div>
+      )}
+
 
 
       {/* Map container */}
