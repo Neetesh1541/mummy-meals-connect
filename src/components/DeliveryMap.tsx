@@ -74,6 +74,7 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [liveStatus, setLiveStatus] = useState<LiveStatus>('connecting');
   const [tick, setTick] = useState(0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const truckIcon = useMemo(() => createTruckIcon(), []);
   const destinationIcon = useMemo(() => createDestinationIcon(), []);
@@ -92,18 +93,26 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
   }, []);
 
   const fetchLocation = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('delivery_partner_locations')
-      .select('latitude, longitude, updated_at')
-      .eq('partner_id', deliveryPartnerId)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('delivery_partner_locations')
+        .select('latitude, longitude, updated_at')
+        .eq('partner_id', deliveryPartnerId)
+        .maybeSingle();
 
-    if (data) {
-      applyLocation(data.latitude as number, data.longitude as number, data.updated_at);
-    } else if (error) {
-      console.error('DeliveryMap: Error fetching location:', error.message);
+      if (error) throw error;
+
+      setFetchError(null);
+      if (data) {
+        applyLocation(data.latitude as number, data.longitude as number, data.updated_at);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Network error';
+      console.error('DeliveryMap: Error fetching location:', message);
+      setFetchError(message);
     }
   }, [deliveryPartnerId, applyLocation]);
+
 
   // Keep the "updated Xs ago" label accurate.
   useEffect(() => {
