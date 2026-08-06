@@ -40,7 +40,7 @@ export default function PaymentSuccess() {
   }, [searchParams]);
 
   return (
-    <div className="min-h-dvh bg-background flex items-center justify-center p-4">
+    <main id="main-content" className="min-h-dvh bg-background flex items-center justify-center p-4" aria-live="polite">
       <Card className="w-full max-w-md text-center shadow-lg animate-fade-in">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">
@@ -72,6 +72,6 @@ export default function PaymentSuccess() {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }
