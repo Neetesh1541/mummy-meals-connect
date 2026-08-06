@@ -35,7 +35,7 @@ const Index = () => {
     <div className="min-h-dvh bg-background relative">
       <WavyBackground />
       <Header />
-      <main className="relative z-10">
+      <main id="main-content" className="relative z-10">
         <HeroSection />
       </main>
       <Footer />

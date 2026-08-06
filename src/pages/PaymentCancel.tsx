@@ -12,7 +12,7 @@ export default function PaymentCancel() {
     <div className="min-h-dvh bg-background relative">
       <WavyBackground />
       <Header />
-      <main className="container py-20 relative z-10 flex items-center justify-center">
+      <main id="main-content" className="container py-20 relative z-10 flex items-center justify-center">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             <CardTitle>Payment Canceled</CardTitle>

@@ -219,7 +219,7 @@ export default function Auth() {
     return (
       <div className="min-h-dvh bg-background">
         <Header />
-        <main className="container py-20">
+        <main id="main-content" className="container py-20">
           <div className="max-w-md mx-auto">
             <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm">
               <CardHeader className="text-center">

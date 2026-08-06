@@ -39,11 +39,11 @@ export function NotificationBanner() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-fade-up">
+    <div role="region" aria-label="Notification permission prompt" className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-fade-up">
       <div className="glass-card !p-4 shadow-warm-lg border border-primary/20">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded-xl bg-primary/10 shrink-0">
-            <Bell className="h-5 w-5 text-primary animate-pulse-soft" />
+            <Bell className="h-5 w-5 text-primary animate-pulse-soft" aria-hidden="true" />
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-sm">Enable Notifications</h4>
@@ -71,8 +71,9 @@ export function NotificationBanner() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-6 w-6 shrink-0"
+            className="h-8 w-8 shrink-0"
             onClick={handleDismiss}
+            aria-label="Dismiss notification prompt"
           >
             <X className="h-4 w-4" />
           </Button>

@@ -33,7 +33,7 @@ export default function NotificationSettings() {
     <div className="min-h-dvh flex flex-col bg-background">
       <Header />
 
-      <main className="flex-1 container max-w-3xl py-10 space-y-6">
+      <main id="main-content" className="flex-1 container max-w-3xl py-10 space-y-6">
         <div className="space-y-2">
           <Button asChild variant="ghost" size="sm" className="rounded-xl -ml-2 gap-2">
             <Link to="/profile">

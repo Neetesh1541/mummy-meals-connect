@@ -24,6 +24,8 @@ export function Header() {
   ];
 
   return (
+    <>
+    <a href="#main-content" className="skip-link">Skip to main content</a>
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-18 items-center justify-between py-3">
         <Link to="/" className="flex items-center">
@@ -128,5 +130,6 @@ export function Header() {
         </div>
       )}
     </header>
+    </>
   );
 }
