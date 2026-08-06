@@ -46,6 +46,20 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // Apply the saved theme before first paint so the loading screen and
+      // dashboards never flash the wrong theme.
+      (function () {
+        try {
+          var t = localStorage.getItem("mummy-meals-theme");
+          if (t !== "light" && t !== "dark" && t !== "comfort") t = "light";
+          document.documentElement.classList.add(t);
+        } catch (e) {
+          document.documentElement.classList.add("light");
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
+
   </body>
 </html>
