@@ -120,21 +120,38 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
     return () => clearInterval(t);
   }, []);
 
-  // Realtime with polling fallback
+  // Realtime with polling fallback. While the tab is active we validate the
+  // location frequently (4s fallback / 15s freshness check) and pause entirely
+  // when the tab is hidden so we don't burn battery or quota.
   useEffect(() => {
     fetchLocation();
 
     let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let freshnessTimer: ReturnType<typeof setInterval> | null = null;
+
+    const clear = (t: ReturnType<typeof setInterval> | null) => {
+      if (t) clearInterval(t);
+      return null;
+    };
+
     const startPolling = () => {
       if (pollTimer) return;
       setLiveStatus('polling');
-      pollTimer = setInterval(fetchLocation, 10000);
+      pollTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') fetchLocation();
+      }, 4000);
     };
     const stopPolling = () => {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
+      pollTimer = clear(pollTimer);
+    };
+
+    // Even on a healthy realtime channel, re-read periodically so a dropped
+    // event never leaves a stale pin on the map.
+    const startFreshnessChecks = () => {
+      if (freshnessTimer) return;
+      freshnessTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') fetchLocation();
+      }, 15000);
     };
 
     const fallbackTimer = setTimeout(startPolling, 6000);
@@ -153,6 +170,7 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
           const newData = payload.new as { latitude: number; longitude: number; updated_at: string };
           if (newData?.latitude && newData?.longitude) {
             applyLocation(newData.latitude, newData.longitude, newData.updated_at);
+            setFetchError(null);
           }
         }
       )
@@ -161,6 +179,7 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
           clearTimeout(fallbackTimer);
           stopPolling();
           setLiveStatus('live');
+          startFreshnessChecks();
           fetchLocation();
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           startPolling();
@@ -171,14 +190,18 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
       if (document.visibilityState === 'visible') fetchLocation();
     };
     document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onVisible);
 
     return () => {
       clearTimeout(fallbackTimer);
       stopPolling();
+      freshnessTimer = clear(freshnessTimer);
       document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onVisible);
       supabase.removeChannel(channel);
     };
   }, [deliveryPartnerId, fetchLocation, applyLocation]);
+
 
   const updatedAgo = useMemo(() => {
     if (!lastUpdate) return undefined;
