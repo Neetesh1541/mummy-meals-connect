@@ -203,12 +203,21 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
   }, [deliveryPartnerId, fetchLocation, applyLocation]);
 
 
-  const updatedAgo = useMemo(() => {
-    if (!lastUpdate) return undefined;
+  const secondsSinceUpdate = useMemo(() => {
     void tick;
-    const s = Math.max(0, Math.round((Date.now() - lastUpdate.getTime()) / 1000));
-    return s < 60 ? `${s}s ago` : `${Math.round(s / 60)}m ago`;
+    if (!lastUpdate) return null;
+    return Math.max(0, Math.round((Date.now() - lastUpdate.getTime()) / 1000));
   }, [lastUpdate, tick]);
+
+  const updatedAgo = useMemo(() => {
+    if (secondsSinceUpdate === null) return undefined;
+    return secondsSinceUpdate < 60
+      ? `${secondsSinceUpdate}s ago`
+      : `${Math.round(secondsSinceUpdate / 60)}m ago`;
+  }, [secondsSinceUpdate]);
+
+  const isStale = secondsSinceUpdate !== null && secondsSinceUpdate > 90;
+
 
 
   // Generate trail path from location history
