@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 
 export interface NotificationPermissionState {
   permission: NotificationPermission;
@@ -8,6 +9,7 @@ export interface NotificationPermissionState {
 
 export function useNotifications() {
   const { toast } = useToast();
+  const { shouldNotify } = useNotificationPreferences();
   const [permissionState, setPermissionState] = useState<NotificationPermissionState>({
     permission: 'default',
     isSupported: false,
@@ -139,6 +141,7 @@ export function useNotifications() {
     sendNotification(message.title, {
       body: message.body,
       tag: `order-${status}`,
+      statusKey: status,
     });
   }, [sendNotification]);
 
