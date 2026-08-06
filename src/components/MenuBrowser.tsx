@@ -52,7 +52,7 @@ const StarDisplay = ({ rating, count }: { rating: number; count: number }) => {
           <Star key={`full-${i}`} className="h-4 w-4 fill-current" />
         ))}
         {[...Array(emptyStars)].map((_, i) => (
-          <Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />
+          <Star key={`empty-${i}`} className="h-4 w-4 text-muted-foreground/30" />
         ))}
       </div>
       <span className="text-xs text-muted-foreground ml-1">
@@ -331,7 +331,7 @@ export function MenuBrowser() {
                             <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                        <span className="text-sm text-gray-600">In Cart</span>
+                        <span className="text-sm text-muted-foreground">In Cart</span>
                       </div>
                     ) : (
                       <Button
@@ -362,17 +362,17 @@ export function MenuBrowser() {
 
       {!loading && menuItems.length === 0 && (
         <div className="text-center py-12">
-          <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No meals available</h3>
-          <p className="text-gray-600">Check back soon for delicious home-cooked meals!</p>
+          <p className="text-muted-foreground">Check back soon for delicious home-cooked meals!</p>
         </div>
       )}
       
       {!loading && menuItems.length > 0 && filteredMenuItems.length === 0 && (
          <div className="text-center py-12">
-          <Search className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">No meals found</h3>
-          <p className="text-gray-600">We couldn't find any meals matching your search. Try another keyword!</p>
+          <p className="text-muted-foreground">We couldn't find any meals matching your search. Try another keyword!</p>
         </div>
       )}
       

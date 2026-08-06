@@ -32,7 +32,7 @@ const Index = () => {
   }, [user, userRole, loading, navigate]);
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-dvh bg-background relative">
       <WavyBackground />
       <Header />
       <main className="relative z-10">

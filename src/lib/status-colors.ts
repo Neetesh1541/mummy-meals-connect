@@ -33,9 +33,9 @@ export const getStatusClassNames = (status: string) => {
       };
     default:
       return {
-        bg: 'bg-gray-300',
-        text: 'text-gray-600',
-        badge: 'bg-gray-100 text-gray-800',
+        bg: 'bg-muted',
+        text: 'text-muted-foreground',
+        badge: 'bg-muted text-foreground',
       };
   }
 };

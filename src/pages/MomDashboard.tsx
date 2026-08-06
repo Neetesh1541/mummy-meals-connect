@@ -350,10 +350,10 @@ export default function MomDashboard() {
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h3 className="text-lg font-semibold">{order.menu.title}</h3>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-muted-foreground">
                                 {new Date(order.created_at).toLocaleString()}
                               </p>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-muted-foreground">
                                 Quantity: {order.quantity}
                               </p>
                                <div className="flex items-center gap-2 mt-2">

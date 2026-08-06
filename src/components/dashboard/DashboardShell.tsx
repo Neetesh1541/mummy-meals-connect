@@ -21,7 +21,7 @@ export function DashboardShell({
   maxWidth = "max-w-7xl",
 }: DashboardShellProps) {
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-dvh bg-background relative">
       <WavyBackground />
       <Header />
       <main className="container py-8 relative z-10">

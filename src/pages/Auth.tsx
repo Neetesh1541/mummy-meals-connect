@@ -217,7 +217,7 @@ export default function Auth() {
   // Show password reset form
   if (showResetPassword) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <Header />
         <main className="container py-20">
           <div className="max-w-md mx-auto">
@@ -261,7 +261,7 @@ export default function Auth() {
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <Header />
         <main className="container py-20">
           <div className="max-w-md mx-auto">
@@ -274,7 +274,7 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <Header />
       <main className="container py-20">
         <div className="max-w-md mx-auto">

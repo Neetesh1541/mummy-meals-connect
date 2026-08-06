@@ -333,8 +333,8 @@ export function MenuManagement() {
             {item.image_url ? (
                 <img src={item.image_url} alt={item.title} className="w-full sm:w-48 h-48 sm:h-auto object-cover" />
               ) : (
-                <div className="w-full sm:w-48 h-48 sm:h-auto bg-gray-200 flex items-center justify-center">
-                  <Camera className="h-12 w-12 text-gray-400" />
+                <div className="w-full sm:w-48 h-48 sm:h-auto bg-muted flex items-center justify-center">
+                  <Camera className="h-12 w-12 text-muted-foreground" />
                 </div>
             )}
             <CardContent className="p-6 flex-1">
@@ -346,7 +346,7 @@ export function MenuManagement() {
                       {item.available ? "Available" : "Unavailable"}
                     </Badge>
                   </div>
-                  <p className="text-gray-600 mb-2">{item.description}</p>
+                  <p className="text-muted-foreground mb-2">{item.description}</p>
                   <p className="text-xl font-bold text-green-600">₹{item.price}</p>
                 </div>
                 <div className="flex space-x-2">

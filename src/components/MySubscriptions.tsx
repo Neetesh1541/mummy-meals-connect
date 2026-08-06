@@ -100,9 +100,9 @@ export function MySubscriptions() {
       {subscriptions.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <Repeat className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <Repeat className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No active subscriptions</h3>
-            <p className="text-gray-600">Subscribe to a meal to see it here!</p>
+            <p className="text-muted-foreground">Subscribe to a meal to see it here!</p>
           </CardContent>
         </Card>
       ) : (

@@ -5,7 +5,7 @@ import { Heart, Target, Users, Award } from "lucide-react";
 
 export default function About() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <Header />
       <main className="container py-20">
         <div className="max-w-4xl mx-auto space-y-16">

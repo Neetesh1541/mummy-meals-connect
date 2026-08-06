@@ -148,7 +148,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <Header />
       <main className="container py-8">
         <div className="max-w-2xl mx-auto space-y-8">

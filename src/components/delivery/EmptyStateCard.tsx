@@ -13,9 +13,9 @@ export function EmptyStateCard({ icon, title, message }: EmptyStateCardProps) {
   return (
     <Card>
       <CardContent className="text-center py-12">
-        {icon || <Truck className="h-12 w-12 mx-auto text-gray-400 mb-4" />}
+        {icon || <Truck className="h-12 w-12 mx-auto text-muted-foreground mb-4" />}
         <h3 className="text-lg font-semibold mb-2">{title}</h3>
-        <p className="text-gray-600">{message}</p>
+        <p className="text-muted-foreground">{message}</p>
       </CardContent>
     </Card>
   );

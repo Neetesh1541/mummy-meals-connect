@@ -40,7 +40,7 @@ export default function PaymentSuccess() {
   }, [searchParams]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md text-center shadow-lg animate-fade-in">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">
