@@ -10,22 +10,42 @@ type ThemeProviderContextType = {
 
 const ThemeProviderContext = createContext<ThemeProviderContextType | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("light");
+const STORAGE_KEY = "mummy-meals-theme";
+const isTheme = (v: unknown): v is Theme => v === "light" || v === "dark" || v === "comfort";
 
-  useEffect(() => {
-    const storedTheme = localStorage.getItem("mummy-meals-theme") as Theme;
-    if (storedTheme) {
-      setTheme(storedTheme);
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  // Read synchronously so the very first render already matches the stored
+  // theme (the pre-paint script in index.html applies the same class).
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return isTheme(stored) ? stored : "light";
+    } catch {
+      return "light";
     }
-  }, []);
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark", "comfort");
     root.classList.add(theme);
-    localStorage.setItem("mummy-meals-theme", theme);
+    root.style.colorScheme = theme === "dark" ? "dark" : "light";
+    try {
+      localStorage.setItem(STORAGE_KEY, theme);
+    } catch {
+      /* storage unavailable — theme still applies for this session */
+    }
   }, [theme]);
+
+  // Keep tabs/sessions in sync when the theme changes elsewhere.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && isTheme(e.newValue)) setTheme(e.newValue);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
 
   return (
     <ThemeProviderContext.Provider value={{ theme, setTheme }}>

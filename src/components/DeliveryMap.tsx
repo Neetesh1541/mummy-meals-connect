@@ -3,8 +3,9 @@ import { MapContainer, TileLayer, Marker, useMap, Polyline, Circle } from 'react
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
-import { Truck, Navigation, MapPin, Clock } from 'lucide-react';
+import { Truck, Navigation, MapPin, Clock, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { LiveIndicator, LiveStatus } from '@/components/LiveIndicator';
 
 
@@ -74,6 +75,7 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [liveStatus, setLiveStatus] = useState<LiveStatus>('connecting');
   const [tick, setTick] = useState(0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const truckIcon = useMemo(() => createTruckIcon(), []);
   const destinationIcon = useMemo(() => createDestinationIcon(), []);
@@ -92,18 +94,26 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
   }, []);
 
   const fetchLocation = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('delivery_partner_locations')
-      .select('latitude, longitude, updated_at')
-      .eq('partner_id', deliveryPartnerId)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('delivery_partner_locations')
+        .select('latitude, longitude, updated_at')
+        .eq('partner_id', deliveryPartnerId)
+        .maybeSingle();
 
-    if (data) {
-      applyLocation(data.latitude as number, data.longitude as number, data.updated_at);
-    } else if (error) {
-      console.error('DeliveryMap: Error fetching location:', error.message);
+      if (error) throw error;
+
+      setFetchError(null);
+      if (data) {
+        applyLocation(data.latitude as number, data.longitude as number, data.updated_at);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Network error';
+      console.error('DeliveryMap: Error fetching location:', message);
+      setFetchError(message);
     }
   }, [deliveryPartnerId, applyLocation]);
+
 
   // Keep the "updated Xs ago" label accurate.
   useEffect(() => {
@@ -111,21 +121,38 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
     return () => clearInterval(t);
   }, []);
 
-  // Realtime with polling fallback
+  // Realtime with polling fallback. While the tab is active we validate the
+  // location frequently (4s fallback / 15s freshness check) and pause entirely
+  // when the tab is hidden so we don't burn battery or quota.
   useEffect(() => {
     fetchLocation();
 
     let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let freshnessTimer: ReturnType<typeof setInterval> | null = null;
+
+    const clear = (t: ReturnType<typeof setInterval> | null) => {
+      if (t) clearInterval(t);
+      return null;
+    };
+
     const startPolling = () => {
       if (pollTimer) return;
       setLiveStatus('polling');
-      pollTimer = setInterval(fetchLocation, 10000);
+      pollTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') fetchLocation();
+      }, 4000);
     };
     const stopPolling = () => {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
+      pollTimer = clear(pollTimer);
+    };
+
+    // Even on a healthy realtime channel, re-read periodically so a dropped
+    // event never leaves a stale pin on the map.
+    const startFreshnessChecks = () => {
+      if (freshnessTimer) return;
+      freshnessTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') fetchLocation();
+      }, 15000);
     };
 
     const fallbackTimer = setTimeout(startPolling, 6000);
@@ -144,6 +171,7 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
           const newData = payload.new as { latitude: number; longitude: number; updated_at: string };
           if (newData?.latitude && newData?.longitude) {
             applyLocation(newData.latitude, newData.longitude, newData.updated_at);
+            setFetchError(null);
           }
         }
       )
@@ -152,6 +180,7 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
           clearTimeout(fallbackTimer);
           stopPolling();
           setLiveStatus('live');
+          startFreshnessChecks();
           fetchLocation();
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           startPolling();
@@ -162,21 +191,34 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
       if (document.visibilityState === 'visible') fetchLocation();
     };
     document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onVisible);
 
     return () => {
       clearTimeout(fallbackTimer);
       stopPolling();
+      freshnessTimer = clear(freshnessTimer);
       document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onVisible);
       supabase.removeChannel(channel);
     };
   }, [deliveryPartnerId, fetchLocation, applyLocation]);
 
-  const updatedAgo = useMemo(() => {
-    if (!lastUpdate) return undefined;
+
+  const secondsSinceUpdate = useMemo(() => {
     void tick;
-    const s = Math.max(0, Math.round((Date.now() - lastUpdate.getTime()) / 1000));
-    return s < 60 ? `${s}s ago` : `${Math.round(s / 60)}m ago`;
+    if (!lastUpdate) return null;
+    return Math.max(0, Math.round((Date.now() - lastUpdate.getTime()) / 1000));
   }, [lastUpdate, tick]);
+
+  const updatedAgo = useMemo(() => {
+    if (secondsSinceUpdate === null) return undefined;
+    return secondsSinceUpdate < 60
+      ? `${secondsSinceUpdate}s ago`
+      : `${Math.round(secondsSinceUpdate / 60)}m ago`;
+  }, [secondsSinceUpdate]);
+
+  const isStale = secondsSinceUpdate !== null && secondsSinceUpdate > 90;
+
 
 
   // Generate trail path from location history
@@ -194,11 +236,21 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
           </div>
         </div>
         <div>
-          <p className="font-medium text-foreground">Locating delivery partner...</p>
+          <p className="font-medium text-foreground">
+            {fetchError ? "Couldn't reach live tracking" : 'Locating delivery partner...'}
+          </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Live tracking will appear once location is shared
+            {fetchError
+              ? 'Check your connection — we keep retrying automatically.'
+              : 'Live tracking will appear once location is shared'}
           </p>
         </div>
+        {fetchError && (
+          <Button variant="outline" size="sm" className="gap-2 rounded-xl" onClick={fetchLocation}>
+            <RefreshCw className="h-3.5 w-3.5" />
+            Retry now
+          </Button>
+        )}
       </div>
     );
   }
@@ -211,12 +263,30 @@ export function DeliveryMap({ deliveryPartnerId, destinationAddress }: DeliveryM
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <LiveIndicator status={liveStatus} />
         {updatedAgo && (
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className={`flex items-center gap-1 ${isStale ? 'text-destructive' : 'text-muted-foreground'}`}>
             <Clock className="h-3 w-3" />
-            <span className="text-xs">Updated {updatedAgo}</span>
+            <span className="text-xs">Last updated {updatedAgo}</span>
           </div>
         )}
       </div>
+
+      {(fetchError || isStale) && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
+          <div className="flex items-center gap-2 text-xs text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              {fetchError
+                ? "Can't reach the server — showing the last known position."
+                : "GPS signal looks weak — this position hasn't moved recently."}
+            </span>
+          </div>
+          <Button variant="ghost" size="sm" className="h-7 gap-1.5 rounded-lg text-xs" onClick={fetchLocation}>
+            <RefreshCw className="h-3 w-3" />
+            Refresh
+          </Button>
+        </div>
+      )}
+
 
 
       {/* Map container */}
