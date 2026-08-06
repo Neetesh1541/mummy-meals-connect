@@ -3,8 +3,9 @@ import { MapContainer, TileLayer, Marker, useMap, Polyline, Circle } from 'react
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
-import { Truck, Navigation, MapPin, Clock } from 'lucide-react';
+import { Truck, Navigation, MapPin, Clock, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { LiveIndicator, LiveStatus } from '@/components/LiveIndicator';
 
 
