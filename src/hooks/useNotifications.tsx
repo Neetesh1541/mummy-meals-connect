@@ -55,40 +55,51 @@ export function useNotifications() {
     }
   }, [permissionState.isSupported, toast]);
 
-  const sendNotification = useCallback((title: string, options?: NotificationOptions) => {
-    if (permissionState.permission !== 'granted') {
-      console.log('Notifications not permitted, showing toast instead');
-      toast({
-        title,
-        description: options?.body,
-      });
-      return;
-    }
+  const sendNotification = useCallback(
+    (title: string, options?: NotificationOptions & { statusKey?: string }) => {
+      const { statusKey, ...notificationOptions } = options ?? {};
+      const allowed = shouldNotify(statusKey);
 
-    try {
-      const notification = new Notification(title, {
-        icon: '/favicon.png',
-        badge: '/favicon.png',
-        requireInteraction: false,
-        ...options,
-      });
+      if (!allowed.push && !allowed.inApp) return;
 
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-      };
+      if (permissionState.permission !== 'granted' || !allowed.push) {
+        if (allowed.inApp) {
+          toast({
+            title,
+            description: notificationOptions.body,
+          });
+        }
+        return;
+      }
 
-      // Auto-close after 5 seconds
-      setTimeout(() => notification.close(), 5000);
-    } catch (error) {
-      console.error('Error sending notification:', error);
-      // Fallback to toast
-      toast({
-        title,
-        description: options?.body,
-      });
-    }
-  }, [permissionState.permission, toast]);
+      try {
+        const notification = new Notification(title, {
+          icon: '/android-chrome-192x192.png',
+          badge: '/favicon.png',
+          requireInteraction: false,
+          ...notificationOptions,
+        });
+
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+
+        // Auto-close after 5 seconds
+        setTimeout(() => notification.close(), 5000);
+      } catch (error) {
+        console.error('Error sending notification:', error);
+        // Fallback to toast
+        if (allowed.inApp) {
+          toast({
+            title,
+            description: notificationOptions.body,
+          });
+        }
+      }
+    },
+    [permissionState.permission, toast, shouldNotify]
+  );
 
   const notifyOrderUpdate = useCallback((status: string, menuTitle?: string) => {
     const messages: Record<string, { title: string; body: string; icon: string }> = {
