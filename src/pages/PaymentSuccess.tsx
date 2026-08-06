@@ -64,7 +64,7 @@ export default function PaymentSuccess() {
             <p className="text-destructive mt-4">
               There was an issue with your payment. Please try again from the cart.
               <br />
-              {error && <span className="text-sm font-mono p-2 bg-red-50 rounded-md block mt-2">Error: {error}</span>}
+              {error && <span className="text-sm font-mono p-2 bg-destructive/10 rounded-md block mt-2">Error: {error}</span>}
             </p>
           )}
           <Button asChild className="mt-6 w-full">
