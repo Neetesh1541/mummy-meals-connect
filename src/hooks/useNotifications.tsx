@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
+import { useNotificationHistory } from '@/hooks/useNotificationHistory';
+
 
 export interface NotificationPermissionState {
   permission: NotificationPermission;
