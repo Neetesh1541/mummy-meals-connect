@@ -5,6 +5,8 @@ import { AnimatedLogo } from "./AnimatedLogo";
 import { User, LogOut, Settings, Menu, X, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotificationHistory } from "@/hooks/useNotificationHistory";
+
 import { useState } from "react";
 import {
   DropdownMenu,
