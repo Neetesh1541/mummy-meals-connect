@@ -5,6 +5,8 @@ import { AnimatedLogo } from "./AnimatedLogo";
 import { User, LogOut, Settings, Menu, X, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotificationHistory } from "@/hooks/useNotificationHistory";
+
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -15,7 +17,9 @@ import {
 
 export function Header() {
   const { user, userRole, signOut, loading } = useAuth();
+  const { unreadCount } = useNotificationHistory();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
 
   const navLinks = [
     { to: "/", label: "Home" },
@@ -45,12 +49,25 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            to="/notifications"
+            aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl hover:bg-primary/10 hover:text-primary smooth-transition"
+          >
+            <Bell className="h-5 w-5" aria-hidden="true" />
+            {unreadCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </Link>
           <ThemeToggle />
           
           {loading ? (
             <div className="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           ) : user ? (
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 

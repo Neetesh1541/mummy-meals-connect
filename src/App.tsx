@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationPreferencesProvider } from "@/hooks/useNotificationPreferences";
+import { NotificationHistoryProvider } from "@/hooks/useNotificationHistory";
+import { OfflineBanner } from "@/components/OfflineNotice";
 
 
 // Eager load the main landing page for fast initial render
@@ -22,16 +24,19 @@ const MomDashboard = lazy(() => import("./pages/MomDashboard"));
 const DeliveryDashboard = lazy(() => import("./pages/DeliveryDashboard"));
 const Profile = lazy(() => import("./pages/Profile"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const NotificationCenter = lazy(() => import("./pages/NotificationCenter"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const PaymentCancel = lazy(() => import("./pages/PaymentCancel"));
 
 // Notification banner (loaded lazily)
 const NotificationBanner = lazy(() => import("./components/NotificationBanner").then(m => ({ default: m.NotificationBanner })));
+const PwaUpdateBanner = lazy(() => import("./components/PwaUpdateBanner").then(m => ({ default: m.PwaUpdateBanner })));
 
 import { LoadingScreen } from "./components/LoadingScreen";
 
 // Branded loading fallback
 const PageLoader = () => <LoadingScreen label="Plating up your page…" />;
+
 
 
 // Optimized QueryClient with caching
@@ -65,14 +70,17 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <NotificationPreferencesProvider>
+        <NotificationHistoryProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <Suspense fallback={null}>
-            <NotificationBanner />
-          </Suspense>
           <BootSplash>
           <BrowserRouter>
+            <OfflineBanner />
+            <Suspense fallback={null}>
+              <PwaUpdateBanner />
+              <NotificationBanner />
+            </Suspense>
 
             <Suspense fallback={<PageLoader />}>
               <Routes>
@@ -84,6 +92,7 @@ const App = () => (
                 <Route path="/mom-dashboard" element={<MomDashboard />} />
                 <Route path="/delivery-dashboard" element={<DeliveryDashboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/notifications" element={<NotificationCenter />} />
                 <Route path="/settings/notifications" element={<NotificationSettings />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
                 <Route path="/payment-cancel" element={<PaymentCancel />} />
@@ -95,10 +104,12 @@ const App = () => (
           </BootSplash>
 
         </TooltipProvider>
+        </NotificationHistoryProvider>
         </NotificationPreferencesProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
+
 
 export default App;

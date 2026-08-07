@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
+import { useNotificationHistory } from '@/hooks/useNotificationHistory';
+
 
 export interface NotificationPermissionState {
   permission: NotificationPermission;
@@ -10,6 +12,8 @@ export interface NotificationPermissionState {
 export function useNotifications() {
   const { toast } = useToast();
   const { shouldNotify } = useNotificationPreferences();
+  const { addItem } = useNotificationHistory();
+
   const [permissionState, setPermissionState] = useState<NotificationPermissionState>({
     permission: 'default',
     isSupported: false,
@@ -64,8 +68,12 @@ export function useNotifications() {
 
       if (!allowed.push && !allowed.inApp) return;
 
+      const record = (channel: 'push' | 'in-app') =>
+        addItem({ title, body: notificationOptions.body, statusKey, channel });
+
       if (permissionState.permission !== 'granted' || !allowed.push) {
         if (allowed.inApp) {
+          record('in-app');
           toast({
             title,
             description: notificationOptions.body,
@@ -82,6 +90,8 @@ export function useNotifications() {
           ...notificationOptions,
         });
 
+        record('push');
+
         notification.onclick = () => {
           window.focus();
           notification.close();
@@ -93,6 +103,7 @@ export function useNotifications() {
         console.error('Error sending notification:', error);
         // Fallback to toast
         if (allowed.inApp) {
+          record('in-app');
           toast({
             title,
             description: notificationOptions.body,
@@ -100,8 +111,9 @@ export function useNotifications() {
         }
       }
     },
-    [permissionState.permission, toast, shouldNotify]
+    [permissionState.permission, toast, shouldNotify, addItem]
   );
+
 
   const notifyOrderUpdate = useCallback((status: string, menuTitle?: string) => {
     const messages: Record<string, { title: string; body: string; icon: string }> = {
