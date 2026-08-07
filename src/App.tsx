@@ -70,14 +70,17 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <NotificationPreferencesProvider>
+        <NotificationHistoryProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <Suspense fallback={null}>
-            <NotificationBanner />
-          </Suspense>
           <BootSplash>
           <BrowserRouter>
+            <OfflineBanner />
+            <Suspense fallback={null}>
+              <PwaUpdateBanner />
+              <NotificationBanner />
+            </Suspense>
 
             <Suspense fallback={<PageLoader />}>
               <Routes>
@@ -89,6 +92,7 @@ const App = () => (
                 <Route path="/mom-dashboard" element={<MomDashboard />} />
                 <Route path="/delivery-dashboard" element={<DeliveryDashboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/notifications" element={<NotificationCenter />} />
                 <Route path="/settings/notifications" element={<NotificationSettings />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
                 <Route path="/payment-cancel" element={<PaymentCancel />} />
@@ -100,10 +104,12 @@ const App = () => (
           </BootSplash>
 
         </TooltipProvider>
+        </NotificationHistoryProvider>
         </NotificationPreferencesProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
+
 
 export default App;
