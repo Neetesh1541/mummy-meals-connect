@@ -24,17 +24,22 @@ export function DashboardShell({
     <div className="min-h-dvh bg-background relative">
       <WavyBackground />
       <Header />
-      <main id="main-content" className="container py-8 relative z-10">
-        <div className={`${maxWidth} mx-auto space-y-8`}>
-          <section className="glass rounded-3xl px-6 py-8 md:px-10 md:py-10 animate-fade-up overflow-hidden relative">
+      <main id="main-content" className="container py-6 md:py-10 relative z-10">
+        <div className={`${maxWidth} mx-auto space-y-6 md:space-y-8`}>
+          <section className="glass rounded-3xl px-6 py-8 md:px-10 md:py-12 animate-fade-up overflow-hidden relative shadow-warm">
             <div
-              className="absolute inset-0 -z-10 opacity-60"
+              className="absolute inset-0 -z-10 opacity-70"
               style={{
                 background:
-                  "radial-gradient(ellipse 60% 80% at 100% 0%, hsl(var(--primary) / 0.18), transparent 60%), radial-gradient(ellipse 50% 70% at 0% 100%, hsl(var(--secondary) / 0.14), transparent 60%)",
+                  "radial-gradient(ellipse 60% 80% at 100% 0%, hsl(var(--primary) / 0.22), transparent 60%), radial-gradient(ellipse 50% 70% at 0% 100%, hsl(var(--secondary) / 0.16), transparent 60%)",
               }}
               aria-hidden="true"
             />
+            <div
+              className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl"
+              aria-hidden="true"
+            />
+
             <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div className="space-y-2">
                 {eyebrow && (
