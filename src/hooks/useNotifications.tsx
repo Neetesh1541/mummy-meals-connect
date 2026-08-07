@@ -12,6 +12,8 @@ export interface NotificationPermissionState {
 export function useNotifications() {
   const { toast } = useToast();
   const { shouldNotify } = useNotificationPreferences();
+  const { addItem } = useNotificationHistory();
+
   const [permissionState, setPermissionState] = useState<NotificationPermissionState>({
     permission: 'default',
     isSupported: false,
