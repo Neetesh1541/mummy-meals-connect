@@ -15,7 +15,9 @@ import {
 
 export function Header() {
   const { user, userRole, signOut, loading } = useAuth();
+  const { unreadCount } = useNotificationHistory();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
 
   const navLinks = [
     { to: "/", label: "Home" },
