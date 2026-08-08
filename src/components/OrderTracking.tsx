@@ -142,7 +142,7 @@ export function OrderTracking() {
                 title: "Delivery partner assigned",
                 description: "Someone is on the way to pick up your order.",
               });
-              notifyDeliveryPartnerAssigned();
+              notifyDeliveryPartnerAssigned(undefined, newData.id);
             }
           }
           fetchOrders();
