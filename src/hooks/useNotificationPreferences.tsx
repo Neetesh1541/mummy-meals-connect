@@ -11,6 +11,8 @@ export interface NotificationPreferences {
     start: string; // "HH:MM"
     end: string; // "HH:MM"
   };
+  /** Epoch ms until which alerts are silenced (history is still recorded). */
+  snoozedUntil: number | null;
 }
 
 export const DEFAULT_PREFERENCES: NotificationPreferences = {
@@ -24,6 +26,7 @@ export const DEFAULT_PREFERENCES: NotificationPreferences = {
     delivered: true,
   },
   quietHours: { enabled: false, start: "22:00", end: "07:00" },
+  snoozedUntil: null,
 };
 
 const STORAGE_KEY = "mummy-meals-notification-prefs";
