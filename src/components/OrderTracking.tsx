@@ -84,7 +84,7 @@ export function OrderTracking() {
                 ORDER_STATUS_LABELS[order.status] ?? order.status
               }`,
             });
-            notifyOrderUpdate(order.status);
+            notifyOrderUpdate(order.status, order.menu?.title, order.id);
           }
         });
       }
