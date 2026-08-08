@@ -266,6 +266,48 @@ export default function NotificationSettings() {
           </CardContent>
         </Card>
 
+        {/* Snooze */}
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Clock className="h-5 w-5 text-primary" aria-hidden="true" />
+              Snooze alerts
+              {isSnoozed && (
+                <Badge variant="secondary" className="ml-1 gap-1">
+                  <BellOff className="h-3 w-3" aria-hidden="true" />
+                  {snoozeMinutesLeft}m left
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Temporarily silence push and in-app alerts. Everything is still saved to your
+              notifications center, so nothing is lost.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {SNOOZE_OPTIONS.map((minutes) => (
+              <Button
+                key={minutes}
+                size="sm"
+                variant={minutes === 60 ? "default" : "outline"}
+                className="rounded-xl"
+                onClick={() => snooze(minutes)}
+              >
+                Snooze for {minutes >= 60 ? `${minutes / 60} hour${minutes > 60 ? "s" : ""}` : `${minutes} min`}
+              </Button>
+            ))}
+            {isSnoozed && (
+              <Button size="sm" variant="ghost" className="rounded-xl gap-2" onClick={clearSnooze}>
+                <BellRing className="h-4 w-4" aria-hidden="true" />
+                Resume alerts now
+              </Button>
+            )}
+            <Button size="sm" variant="link" asChild className="text-xs">
+              <Link to="/notifications">Open notifications center</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
@@ -274,6 +316,7 @@ export default function NotificationSettings() {
               sendNotification("Test notification 🔔", {
                 body: "This is how order updates will look.",
                 tag: "test-notification",
+                link: "/notifications",
               })
             }
           >
@@ -286,6 +329,8 @@ export default function NotificationSettings() {
           </Button>
         </div>
       </main>
+
+      <PushPermissionDialog open={pushDialogOpen} onOpenChange={setPushDialogOpen} />
 
       <Footer />
     </div>
