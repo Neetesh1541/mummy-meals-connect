@@ -165,10 +165,17 @@ export function OrderTracking() {
     };
     document.addEventListener('visibilitychange', onVisible);
 
+    // Background sync: refresh the moment the device reconnects.
+    const onReconnect = () => fetchOrders();
+    window.addEventListener('app:reconnect', onReconnect);
+    window.addEventListener('online', onReconnect);
+
     return () => {
       clearTimeout(fallbackTimer);
       stopPolling();
       document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('app:reconnect', onReconnect);
+      window.removeEventListener('online', onReconnect);
       supabase.removeChannel(channel);
     };
   }, [user, fetchOrders, toast, notifyDeliveryPartnerAssigned]);
