@@ -120,7 +120,7 @@ export function useNotifications() {
   );
 
 
-  const notifyOrderUpdate = useCallback((status: string, menuTitle?: string) => {
+  const notifyOrderUpdate = useCallback((status: string, menuTitle?: string, orderId?: string) => {
     const messages: Record<string, { title: string; body: string; icon: string }> = {
       placed: {
         title: "Order Placed! 🎉",
@@ -159,15 +159,21 @@ export function useNotifications() {
       body: message.body,
       tag: `order-${status}`,
       statusKey: status,
+      link: orderId
+        ? `/customer-dashboard?tab=orders&order=${orderId}`
+        : "/customer-dashboard?tab=orders",
     });
   }, [sendNotification]);
 
-  const notifyDeliveryPartnerAssigned = useCallback((partnerName?: string) => {
+  const notifyDeliveryPartnerAssigned = useCallback((partnerName?: string, orderId?: string) => {
     sendNotification("Delivery Partner Assigned! 🚴", {
       body: partnerName 
         ? `${partnerName} will deliver your order. Track live location!`
         : "A delivery partner has been assigned to your order.",
       tag: "delivery-assigned",
+      link: orderId
+        ? `/customer-dashboard?tab=orders&order=${orderId}`
+        : "/customer-dashboard?tab=orders",
     });
   }, [sendNotification]);
 
