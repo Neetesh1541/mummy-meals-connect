@@ -119,9 +119,16 @@ export function PushPermissionDialog({ open, onOpenChange }: PushPermissionDialo
             </Link>
           </Button>
           {denied ? (
-            <Button size="sm" onClick={() => onOpenChange(false)}>
-              Got it
-            </Button>
+            <div className="flex gap-2">
+              {isSupported && (
+                <Button size="sm" variant="outline" disabled={requesting} onClick={handleEnable}>
+                  {requesting ? "Waiting…" : "Try again"}
+                </Button>
+              )}
+              <Button size="sm" onClick={() => onOpenChange(false)}>
+                Got it
+              </Button>
+            </div>
           ) : (
             <Button
               size="sm"
