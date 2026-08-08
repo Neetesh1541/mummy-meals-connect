@@ -19,6 +19,7 @@ import { LiveIndicator, LiveStatus } from "./LiveIndicator";
 
 export function OrderTracking() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [now, setNow] = useState(new Date());
   const [liveStatus, setLiveStatus] = useState<LiveStatus>("connecting");
