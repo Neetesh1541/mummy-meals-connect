@@ -103,10 +103,39 @@ export default function NotificationSettings() {
               Enables operating system notifications for order status changes.
             </p>
 
-            {preferences.pushEnabled && isSupported && permission !== "granted" && (
-              <Button onClick={requestPermission} size="sm" className="rounded-xl">
-                Allow browser notifications
-              </Button>
+            {permission !== "granted" && (
+              <div className="space-y-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                <p className="text-sm font-medium">
+                  {permission === "denied"
+                    ? "Push was blocked earlier — you can turn it back on"
+                    : "Push isn't enabled yet"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {permission === "denied"
+                    ? "Your browser remembers the block, so we'll walk you through re-allowing it. Meanwhile, in-app alerts and the notifications center keep your full history."
+                    : "Allow browser notifications to get updates even when this tab is in the background."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    className="rounded-xl bg-gradient-warm text-primary-foreground border-0"
+                    onClick={() =>
+                      permission === "denied" || !isSupported
+                        ? setPushDialogOpen(true)
+                        : requestPermission()
+                    }
+                  >
+                    <BellRing className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Enable push again
+                  </Button>
+                  <Button size="sm" variant="outline" className="rounded-xl" asChild>
+                    <Link to="/notifications">
+                      <Inbox className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Use in-app alerts instead
+                    </Link>
+                  </Button>
+                </div>
+              </div>
             )}
 
             <Separator />
