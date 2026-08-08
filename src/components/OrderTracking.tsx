@@ -180,6 +180,14 @@ export function OrderTracking() {
     };
   }, [user, fetchOrders, toast, notifyDeliveryPartnerAssigned]);
 
+  // Deep-link: /customer-dashboard?tab=orders&order=<id> focuses one order card.
+  const focusedOrderId = searchParams.get("order");
+  useEffect(() => {
+    if (!focusedOrderId || orders.length === 0) return;
+    const el = document.getElementById(`order-${focusedOrderId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusedOrderId, orders.length]);
+
   const syncedAgo = lastSync
     ? (() => {
         const s = Math.max(0, Math.round((now.getTime() - lastSync.getTime()) / 1000));
