@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, BellOff, Moon, ArrowLeft, RotateCcw, Smartphone, MonitorSmartphone } from "lucide-react";
+import { Bell, BellOff, BellRing, Clock, Moon, ArrowLeft, RotateCcw, Smartphone, MonitorSmartphone, Inbox } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useNotifications } from "@/hooks/useNotifications";
+import { PushPermissionDialog } from "@/components/PushPermissionDialog";
 import {
   useNotificationPreferences,
   type OrderStatusKey,
@@ -23,11 +25,24 @@ const STATUS_ROWS: { key: OrderStatusKey; label: string; description: string }[]
   { key: "delivered", label: "Delivered", description: "When your meal reaches your door" },
 ];
 
+const SNOOZE_OPTIONS = [30, 60, 180];
+
 export default function NotificationSettings() {
-  const { preferences, setPreferences, reset, isQuietNow } = useNotificationPreferences();
+  const {
+    preferences,
+    setPreferences,
+    reset,
+    isQuietNow,
+    isSnoozed,
+    snoozeMinutesLeft,
+    snooze,
+    clearSnooze,
+  } = useNotificationPreferences();
   const { permission, isSupported, requestPermission, sendNotification } = useNotifications();
+  const [pushDialogOpen, setPushDialogOpen] = useState(false);
 
   const pushBlocked = !isSupported || permission === "denied";
+
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
