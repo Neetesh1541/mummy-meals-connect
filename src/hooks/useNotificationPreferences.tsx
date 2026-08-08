@@ -69,6 +69,13 @@ interface NotificationPreferencesContextValue {
   setPreferences: (updater: (prev: NotificationPreferences) => NotificationPreferences) => void;
   reset: () => void;
   isQuietNow: boolean;
+  /** True while a temporary snooze window is active. */
+  isSnoozed: boolean;
+  /** Remaining snooze minutes (0 when not snoozed). */
+  snoozeMinutesLeft: number;
+  /** Silence alerts for N minutes (default 60). History keeps recording. */
+  snooze: (minutes?: number) => void;
+  clearSnooze: () => void;
   shouldNotify: (status?: string) => { push: boolean; inApp: boolean };
 }
 
