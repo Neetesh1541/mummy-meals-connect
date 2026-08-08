@@ -12,7 +12,9 @@ export interface NotificationHistoryItem {
   title: string;
   body?: string;
   statusKey?: string;
-  channel: "push" | "in-app";
+  /** In-app route this alert deep-links to (e.g. /customer-dashboard?order=123). */
+  link?: string;
+  channel: "push" | "in-app" | "silenced";
   createdAt: number;
   read: boolean;
 }

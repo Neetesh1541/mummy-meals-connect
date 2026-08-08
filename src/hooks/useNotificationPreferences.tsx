@@ -11,6 +11,8 @@ export interface NotificationPreferences {
     start: string; // "HH:MM"
     end: string; // "HH:MM"
   };
+  /** Epoch ms until which alerts are silenced (history is still recorded). */
+  snoozedUntil: number | null;
 }
 
 export const DEFAULT_PREFERENCES: NotificationPreferences = {
@@ -24,6 +26,7 @@ export const DEFAULT_PREFERENCES: NotificationPreferences = {
     delivered: true,
   },
   quietHours: { enabled: false, start: "22:00", end: "07:00" },
+  snoozedUntil: null,
 };
 
 const STORAGE_KEY = "mummy-meals-notification-prefs";
@@ -66,6 +69,13 @@ interface NotificationPreferencesContextValue {
   setPreferences: (updater: (prev: NotificationPreferences) => NotificationPreferences) => void;
   reset: () => void;
   isQuietNow: boolean;
+  /** True while a temporary snooze window is active. */
+  isSnoozed: boolean;
+  /** Remaining snooze minutes (0 when not snoozed). */
+  snoozeMinutesLeft: number;
+  /** Silence alerts for N minutes (default 60). History keeps recording. */
+  snooze: (minutes?: number) => void;
+  clearSnooze: () => void;
   shouldNotify: (status?: string) => { push: boolean; inApp: boolean };
 }
 
@@ -110,8 +120,25 @@ export function NotificationPreferencesProvider({ children }: { children: React.
     return isWithinQuietHours(preferences);
   }, [preferences, minuteTick]);
 
+  const snoozeMinutesLeft = useMemo(() => {
+    void minuteTick;
+    if (!preferences.snoozedUntil) return 0;
+    return Math.max(0, Math.ceil((preferences.snoozedUntil - Date.now()) / 60000));
+  }, [preferences.snoozedUntil, minuteTick]);
+
+  const isSnoozed = snoozeMinutesLeft > 0;
+
+  const snooze = useCallback((minutes = 60) => {
+    setPrefsState((prev) => ({ ...prev, snoozedUntil: Date.now() + minutes * 60000 }));
+  }, []);
+
+  const clearSnooze = useCallback(() => {
+    setPrefsState((prev) => ({ ...prev, snoozedUntil: null }));
+  }, []);
+
   const shouldNotify = useCallback(
     (status?: string) => {
+      if (isSnoozed) return { push: false, inApp: false };
       const statusAllowed =
         !status || preferences.statuses[status as OrderStatusKey] !== false;
       if (!statusAllowed) return { push: false, inApp: false };
@@ -120,12 +147,32 @@ export function NotificationPreferencesProvider({ children }: { children: React.
         inApp: preferences.inAppEnabled,
       };
     },
-    [preferences, isQuietNow]
+    [preferences, isQuietNow, isSnoozed]
   );
 
   const value = useMemo(
-    () => ({ preferences, setPreferences, reset, isQuietNow, shouldNotify }),
-    [preferences, setPreferences, reset, isQuietNow, shouldNotify]
+    () => ({
+      preferences,
+      setPreferences,
+      reset,
+      isQuietNow,
+      isSnoozed,
+      snoozeMinutesLeft,
+      snooze,
+      clearSnooze,
+      shouldNotify,
+    }),
+    [
+      preferences,
+      setPreferences,
+      reset,
+      isQuietNow,
+      isSnoozed,
+      snoozeMinutesLeft,
+      snooze,
+      clearSnooze,
+      shouldNotify,
+    ]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

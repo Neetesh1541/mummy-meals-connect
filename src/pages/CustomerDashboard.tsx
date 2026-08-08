@@ -7,12 +7,26 @@ import { Clock, MessageSquare, Home, Repeat } from "lucide-react";
 import { MySubscriptions } from "@/components/MySubscriptions";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { CartProvider } from "@/hooks/useCart";
+import { useSearchParams } from "react-router-dom";
 import {
   DashboardTabsList,
   DashboardTabsTrigger,
 } from "@/components/dashboard/DashboardTabs";
 
+const VALID_TABS = ["browse", "orders", "subscriptions", "feedback"];
+
 export default function CustomerDashboard() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab = tabParam && VALID_TABS.includes(tabParam) ? tabParam : "browse";
+
+  const handleTabChange = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", value);
+    if (value !== "orders") next.delete("order");
+    setSearchParams(next, { replace: true });
+  };
+
   return (
     <DashboardShell
       eyebrow="Customer"
@@ -22,7 +36,8 @@ export default function CustomerDashboard() {
       <CartProvider>
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="min-w-0 flex-1">
-          <Tabs defaultValue="browse" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+
             <DashboardTabsList className="mb-6">
               <DashboardTabsTrigger value="browse">
                 <Home className="h-4 w-4" />

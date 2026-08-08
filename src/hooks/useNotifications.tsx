@@ -62,14 +62,18 @@ export function useNotifications() {
   }, [permissionState.isSupported, toast]);
 
   const sendNotification = useCallback(
-    (title: string, options?: NotificationOptions & { statusKey?: string }) => {
-      const { statusKey, ...notificationOptions } = options ?? {};
+    (title: string, options?: NotificationOptions & { statusKey?: string; link?: string }) => {
+      const { statusKey, link, ...notificationOptions } = options ?? {};
       const allowed = shouldNotify(statusKey);
 
-      if (!allowed.push && !allowed.inApp) return;
+      const record = (channel: 'push' | 'in-app' | 'silenced') =>
+        addItem({ title, body: notificationOptions.body, statusKey, link, channel });
 
-      const record = (channel: 'push' | 'in-app') =>
-        addItem({ title, body: notificationOptions.body, statusKey, channel });
+      // Snoozed / disabled: keep the history entry, skip the visible alert.
+      if (!allowed.push && !allowed.inApp) {
+        record('silenced');
+        return;
+      }
 
       if (permissionState.permission !== 'granted' || !allowed.push) {
         if (allowed.inApp) {
@@ -94,6 +98,7 @@ export function useNotifications() {
 
         notification.onclick = () => {
           window.focus();
+          if (link) window.location.assign(link);
           notification.close();
         };
 
@@ -115,7 +120,7 @@ export function useNotifications() {
   );
 
 
-  const notifyOrderUpdate = useCallback((status: string, menuTitle?: string) => {
+  const notifyOrderUpdate = useCallback((status: string, menuTitle?: string, orderId?: string) => {
     const messages: Record<string, { title: string; body: string; icon: string }> = {
       placed: {
         title: "Order Placed! 🎉",
@@ -154,15 +159,21 @@ export function useNotifications() {
       body: message.body,
       tag: `order-${status}`,
       statusKey: status,
+      link: orderId
+        ? `/customer-dashboard?tab=orders&order=${orderId}`
+        : "/customer-dashboard?tab=orders",
     });
   }, [sendNotification]);
 
-  const notifyDeliveryPartnerAssigned = useCallback((partnerName?: string) => {
+  const notifyDeliveryPartnerAssigned = useCallback((partnerName?: string, orderId?: string) => {
     sendNotification("Delivery Partner Assigned! 🚴", {
       body: partnerName 
         ? `${partnerName} will deliver your order. Track live location!`
         : "A delivery partner has been assigned to your order.",
       tag: "delivery-assigned",
+      link: orderId
+        ? `/customer-dashboard?tab=orders&order=${orderId}`
+        : "/customer-dashboard?tab=orders",
     });
   }, [sendNotification]);
 

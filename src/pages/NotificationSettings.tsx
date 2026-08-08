@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, BellOff, Moon, ArrowLeft, RotateCcw, Smartphone, MonitorSmartphone } from "lucide-react";
+import { Bell, BellOff, BellRing, Clock, Moon, ArrowLeft, RotateCcw, Smartphone, MonitorSmartphone, Inbox } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useNotifications } from "@/hooks/useNotifications";
+import { PushPermissionDialog } from "@/components/PushPermissionDialog";
 import {
   useNotificationPreferences,
   type OrderStatusKey,
@@ -23,11 +25,24 @@ const STATUS_ROWS: { key: OrderStatusKey; label: string; description: string }[]
   { key: "delivered", label: "Delivered", description: "When your meal reaches your door" },
 ];
 
+const SNOOZE_OPTIONS = [30, 60, 180];
+
 export default function NotificationSettings() {
-  const { preferences, setPreferences, reset, isQuietNow } = useNotificationPreferences();
+  const {
+    preferences,
+    setPreferences,
+    reset,
+    isQuietNow,
+    isSnoozed,
+    snoozeMinutesLeft,
+    snooze,
+    clearSnooze,
+  } = useNotificationPreferences();
   const { permission, isSupported, requestPermission, sendNotification } = useNotifications();
+  const [pushDialogOpen, setPushDialogOpen] = useState(false);
 
   const pushBlocked = !isSupported || permission === "denied";
+
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
@@ -88,10 +103,39 @@ export default function NotificationSettings() {
               Enables operating system notifications for order status changes.
             </p>
 
-            {preferences.pushEnabled && isSupported && permission !== "granted" && (
-              <Button onClick={requestPermission} size="sm" className="rounded-xl">
-                Allow browser notifications
-              </Button>
+            {permission !== "granted" && (
+              <div className="space-y-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                <p className="text-sm font-medium">
+                  {permission === "denied"
+                    ? "Push was blocked earlier — you can turn it back on"
+                    : "Push isn't enabled yet"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {permission === "denied"
+                    ? "Your browser remembers the block, so we'll walk you through re-allowing it. Meanwhile, in-app alerts and the notifications center keep your full history."
+                    : "Allow browser notifications to get updates even when this tab is in the background."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    className="rounded-xl bg-gradient-warm text-primary-foreground border-0"
+                    onClick={() =>
+                      permission === "denied" || !isSupported
+                        ? setPushDialogOpen(true)
+                        : requestPermission()
+                    }
+                  >
+                    <BellRing className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Enable push again
+                  </Button>
+                  <Button size="sm" variant="outline" className="rounded-xl" asChild>
+                    <Link to="/notifications">
+                      <Inbox className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Use in-app alerts instead
+                    </Link>
+                  </Button>
+                </div>
+              </div>
             )}
 
             <Separator />
@@ -222,6 +266,48 @@ export default function NotificationSettings() {
           </CardContent>
         </Card>
 
+        {/* Snooze */}
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Clock className="h-5 w-5 text-primary" aria-hidden="true" />
+              Snooze alerts
+              {isSnoozed && (
+                <Badge variant="secondary" className="ml-1 gap-1">
+                  <BellOff className="h-3 w-3" aria-hidden="true" />
+                  {snoozeMinutesLeft}m left
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Temporarily silence push and in-app alerts. Everything is still saved to your
+              notifications center, so nothing is lost.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {SNOOZE_OPTIONS.map((minutes) => (
+              <Button
+                key={minutes}
+                size="sm"
+                variant={minutes === 60 ? "default" : "outline"}
+                className="rounded-xl"
+                onClick={() => snooze(minutes)}
+              >
+                Snooze for {minutes >= 60 ? `${minutes / 60} hour${minutes > 60 ? "s" : ""}` : `${minutes} min`}
+              </Button>
+            ))}
+            {isSnoozed && (
+              <Button size="sm" variant="ghost" className="rounded-xl gap-2" onClick={clearSnooze}>
+                <BellRing className="h-4 w-4" aria-hidden="true" />
+                Resume alerts now
+              </Button>
+            )}
+            <Button size="sm" variant="link" asChild className="text-xs">
+              <Link to="/notifications">Open notifications center</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         <div className="flex flex-wrap gap-3">
           <Button
             variant="outline"
@@ -230,6 +316,7 @@ export default function NotificationSettings() {
               sendNotification("Test notification 🔔", {
                 body: "This is how order updates will look.",
                 tag: "test-notification",
+                link: "/notifications",
               })
             }
           >
@@ -242,6 +329,8 @@ export default function NotificationSettings() {
           </Button>
         </div>
       </main>
+
+      <PushPermissionDialog open={pushDialogOpen} onOpenChange={setPushDialogOpen} />
 
       <Footer />
     </div>

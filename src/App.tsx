@@ -9,6 +9,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationPreferencesProvider } from "@/hooks/useNotificationPreferences";
 import { NotificationHistoryProvider } from "@/hooks/useNotificationHistory";
 import { OfflineBanner } from "@/components/OfflineNotice";
+import { ReconnectSync } from "@/components/ReconnectSync";
 
 
 // Eager load the main landing page for fast initial render
@@ -77,6 +78,7 @@ const App = () => (
           <BootSplash>
           <BrowserRouter>
             <OfflineBanner />
+            <ReconnectSync />
             <Suspense fallback={null}>
               <PwaUpdateBanner />
               <NotificationBanner />

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { LiveIndicator, LiveStatus } from "./LiveIndicator";
 
 export function OrderTracking() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [now, setNow] = useState(new Date());
   const [liveStatus, setLiveStatus] = useState<LiveStatus>("connecting");
@@ -84,7 +86,7 @@ export function OrderTracking() {
                 ORDER_STATUS_LABELS[order.status] ?? order.status
               }`,
             });
-            notifyOrderUpdate(order.status);
+            notifyOrderUpdate(order.status, order.menu?.title, order.id);
           }
         });
       }
@@ -142,7 +144,7 @@ export function OrderTracking() {
                 title: "Delivery partner assigned",
                 description: "Someone is on the way to pick up your order.",
               });
-              notifyDeliveryPartnerAssigned();
+              notifyDeliveryPartnerAssigned(undefined, newData.id);
             }
           }
           fetchOrders();
@@ -165,13 +167,28 @@ export function OrderTracking() {
     };
     document.addEventListener('visibilitychange', onVisible);
 
+    // Background sync: refresh the moment the device reconnects.
+    const onReconnect = () => fetchOrders();
+    window.addEventListener('app:reconnect', onReconnect);
+    window.addEventListener('online', onReconnect);
+
     return () => {
       clearTimeout(fallbackTimer);
       stopPolling();
       document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('app:reconnect', onReconnect);
+      window.removeEventListener('online', onReconnect);
       supabase.removeChannel(channel);
     };
   }, [user, fetchOrders, toast, notifyDeliveryPartnerAssigned]);
+
+  // Deep-link: /customer-dashboard?tab=orders&order=<id> focuses one order card.
+  const focusedOrderId = searchParams.get("order");
+  useEffect(() => {
+    if (!focusedOrderId || orders.length === 0) return;
+    const el = document.getElementById(`order-${focusedOrderId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusedOrderId, orders.length]);
 
   const syncedAgo = lastSync
     ? (() => {
@@ -267,7 +284,13 @@ export function OrderTracking() {
 
         <div className="space-y-4">
           {orders.map((order) => (
-            <Card key={order.id} className="animate-fade-up overflow-hidden rounded-3xl border-border/60 shadow-warm smooth-transition hover:shadow-warm-lg">
+            <Card
+              key={order.id}
+              id={`order-${order.id}`}
+              className={`animate-fade-up overflow-hidden rounded-3xl border-border/60 shadow-warm smooth-transition hover:shadow-warm-lg ${
+                focusedOrderId === order.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
+              }`}
+            >
               <CardHeader className="bg-muted/30 pb-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
