@@ -78,6 +78,7 @@ const App = () => (
           <BootSplash>
           <BrowserRouter>
             <OfflineBanner />
+            <ReconnectSync />
             <Suspense fallback={null}>
               <PwaUpdateBanner />
               <NotificationBanner />
