@@ -274,7 +274,13 @@ export function OrderTracking() {
 
         <div className="space-y-4">
           {orders.map((order) => (
-            <Card key={order.id} className="animate-fade-up overflow-hidden rounded-3xl border-border/60 shadow-warm smooth-transition hover:shadow-warm-lg">
+            <Card
+              key={order.id}
+              id={`order-${order.id}`}
+              className={`animate-fade-up overflow-hidden rounded-3xl border-border/60 shadow-warm smooth-transition hover:shadow-warm-lg ${
+                focusedOrderId === order.id ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
+              }`}
+            >
               <CardHeader className="bg-muted/30 pb-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
