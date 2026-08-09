@@ -7,6 +7,8 @@ import React, {
   useState,
 } from "react";
 
+export type NotificationCategory = "order" | "delivery" | "system";
+
 export interface NotificationHistoryItem {
   id: string;
   title: string;
@@ -15,6 +17,8 @@ export interface NotificationHistoryItem {
   /** In-app route this alert deep-links to (e.g. /customer-dashboard?order=123). */
   link?: string;
   channel: "push" | "in-app" | "silenced";
+  /** High-level alert type used for filtering. */
+  category?: NotificationCategory;
   createdAt: number;
   read: boolean;
 }
@@ -33,12 +37,29 @@ function readStored(): NotificationHistoryItem[] {
   }
 }
 
+/** A stored link matches the current route when path matches and every link param is present. */
+export function linkMatchesRoute(link: string, route: string): boolean {
+  try {
+    const a = new URL(link, "http://x");
+    const b = new URL(route, "http://x");
+    if (a.pathname !== b.pathname) return false;
+    for (const [k, v] of a.searchParams.entries()) {
+      if (b.searchParams.get(k) !== v) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 interface HistoryContextValue {
   items: NotificationHistoryItem[];
   unreadCount: number;
   addItem: (item: Omit<NotificationHistoryItem, "id" | "createdAt" | "read">) => void;
   markRead: (id: string) => void;
   markAllRead: () => void;
+  /** Marks every alert whose deep-link matches the given route as read. */
+  markReadByLink: (route: string) => void;
   removeItem: (id: string) => void;
   clearAll: () => void;
 }
@@ -80,6 +101,22 @@ export function NotificationHistoryProvider({ children }: { children: React.Reac
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, read: true } : i)));
   }, []);
 
+  const markReadByLink = useCallback((route: string) => {
+    if (!route) return;
+    setItems((prev) => {
+      let changed = false;
+      const next = prev.map((i) => {
+        if (i.read || !i.link) return i;
+        if (linkMatchesRoute(i.link, route)) {
+          changed = true;
+          return { ...i, read: true };
+        }
+        return i;
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
   const markAllRead = useCallback(() => {
     setItems((prev) => prev.map((i) => ({ ...i, read: true })));
   }, []);
@@ -93,8 +130,17 @@ export function NotificationHistoryProvider({ children }: { children: React.Reac
   const unreadCount = useMemo(() => items.filter((i) => !i.read).length, [items]);
 
   const value = useMemo(
-    () => ({ items, unreadCount, addItem, markRead, markAllRead, removeItem, clearAll }),
-    [items, unreadCount, addItem, markRead, markAllRead, removeItem, clearAll]
+    () => ({
+      items,
+      unreadCount,
+      addItem,
+      markRead,
+      markReadByLink,
+      markAllRead,
+      removeItem,
+      clearAll,
+    }),
+    [items, unreadCount, addItem, markRead, markReadByLink, markAllRead, removeItem, clearAll]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -260,6 +260,28 @@ export default function NotificationSettings() {
                 />
               </div>
             </div>
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/60 bg-muted/30 p-4">
+              <div className="space-y-1">
+                <Label htmlFor="quiet-in-app" className="text-base">
+                  Also silence in-app alerts
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Push is always silenced during quiet hours. Turn this on to mute in-app
+                  toasts too — history is still recorded either way.
+                </p>
+              </div>
+              <Switch
+                id="quiet-in-app"
+                checked={preferences.quietHours.silenceInApp}
+                disabled={!preferences.quietHours.enabled}
+                onCheckedChange={(checked) =>
+                  setPreferences((prev) => ({
+                    ...prev,
+                    quietHours: { ...prev.quietHours, silenceInApp: checked },
+                  }))
+                }
+              />
+            </div>
             <p className="text-sm text-muted-foreground">
               Overnight windows work as expected — for example 22:00 to 07:00.
             </p>

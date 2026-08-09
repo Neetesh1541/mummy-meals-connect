@@ -10,6 +10,8 @@ export interface NotificationPreferences {
     enabled: boolean;
     start: string; // "HH:MM"
     end: string; // "HH:MM"
+    /** When true, in-app toasts are silenced during quiet hours too. */
+    silenceInApp: boolean;
   };
   /** Epoch ms until which alerts are silenced (history is still recorded). */
   snoozedUntil: number | null;
@@ -25,7 +27,7 @@ export const DEFAULT_PREFERENCES: NotificationPreferences = {
     picked_up: true,
     delivered: true,
   },
-  quietHours: { enabled: false, start: "22:00", end: "07:00" },
+  quietHours: { enabled: false, start: "22:00", end: "07:00", silenceInApp: false },
   snoozedUntil: null,
 };
 
@@ -144,7 +146,9 @@ export function NotificationPreferencesProvider({ children }: { children: React.
       if (!statusAllowed) return { push: false, inApp: false };
       return {
         push: preferences.pushEnabled && !isQuietNow,
-        inApp: preferences.inAppEnabled,
+        inApp:
+          preferences.inAppEnabled &&
+          !(isQuietNow && preferences.quietHours.silenceInApp),
       };
     },
     [preferences, isQuietNow, isSnoozed]

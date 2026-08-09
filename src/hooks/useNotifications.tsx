@@ -1,7 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
-import { useNotificationHistory } from '@/hooks/useNotificationHistory';
+import {
+  useNotificationHistory,
+  type NotificationCategory,
+} from '@/hooks/useNotificationHistory';
 
 
 export interface NotificationPermissionState {
@@ -62,12 +65,19 @@ export function useNotifications() {
   }, [permissionState.isSupported, toast]);
 
   const sendNotification = useCallback(
-    (title: string, options?: NotificationOptions & { statusKey?: string; link?: string }) => {
-      const { statusKey, link, ...notificationOptions } = options ?? {};
+    (
+      title: string,
+      options?: NotificationOptions & {
+        statusKey?: string;
+        link?: string;
+        category?: NotificationCategory;
+      }
+    ) => {
+      const { statusKey, link, category = 'system', ...notificationOptions } = options ?? {};
       const allowed = shouldNotify(statusKey);
 
       const record = (channel: 'push' | 'in-app' | 'silenced') =>
-        addItem({ title, body: notificationOptions.body, statusKey, link, channel });
+        addItem({ title, body: notificationOptions.body, statusKey, link, channel, category });
 
       // Snoozed / disabled: keep the history entry, skip the visible alert.
       if (!allowed.push && !allowed.inApp) {
@@ -159,6 +169,7 @@ export function useNotifications() {
       body: message.body,
       tag: `order-${status}`,
       statusKey: status,
+      category: status === 'picked_up' || status === 'delivered' ? 'delivery' : 'order',
       link: orderId
         ? `/customer-dashboard?tab=orders&order=${orderId}`
         : "/customer-dashboard?tab=orders",
@@ -171,6 +182,7 @@ export function useNotifications() {
         ? `${partnerName} will deliver your order. Track live location!`
         : "A delivery partner has been assigned to your order.",
       tag: "delivery-assigned",
+      category: "delivery",
       link: orderId
         ? `/customer-dashboard?tab=orders&order=${orderId}`
         : "/customer-dashboard?tab=orders",

@@ -10,6 +10,7 @@ import { NotificationPreferencesProvider } from "@/hooks/useNotificationPreferen
 import { NotificationHistoryProvider } from "@/hooks/useNotificationHistory";
 import { OfflineBanner } from "@/components/OfflineNotice";
 import { ReconnectSync } from "@/components/ReconnectSync";
+import { DeepLinkReadSync } from "@/components/DeepLinkReadSync";
 
 
 // Eager load the main landing page for fast initial render
@@ -79,6 +80,7 @@ const App = () => (
           <BrowserRouter>
             <OfflineBanner />
             <ReconnectSync />
+            <DeepLinkReadSync />
             <Suspense fallback={null}>
               <PwaUpdateBanner />
               <NotificationBanner />
