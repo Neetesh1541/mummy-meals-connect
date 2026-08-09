@@ -341,7 +341,10 @@ export default function NotificationCenter() {
           </div>
         ) : (
           <ul className="divide-y divide-border/60">
-            {visible.map((item) => (
+            {visible.map((item) => {
+              const category = item.category ?? "system";
+              const ItemIcon = TYPE_ICON[category] ?? Bell;
+              return (
               <li
                 key={item.id}
                 className={`flex items-start gap-3 py-4 smooth-transition ${
@@ -353,7 +356,7 @@ export default function NotificationCenter() {
                     item.read ? "bg-muted" : "bg-primary/10"
                   }`}
                 >
-                  <Bell
+                  <ItemIcon
                     className={`h-5 w-5 ${item.read ? "text-muted-foreground" : "text-primary"}`}
                     aria-hidden="true"
                   />
@@ -364,10 +367,14 @@ export default function NotificationCenter() {
                     {!item.read && (
                       <span className="h-2 w-2 rounded-full bg-primary" aria-label="Unread" />
                     )}
+                    <Badge variant="secondary" className="text-[10px] uppercase">
+                      {category}
+                    </Badge>
                     <Badge variant="outline" className="text-[10px] uppercase">
                       {CHANNEL_LABEL[item.channel] ?? item.channel}
                     </Badge>
                   </div>
+
                   {item.body && (
                     <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
                   )}
