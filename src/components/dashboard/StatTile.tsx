@@ -38,11 +38,15 @@ export function StatTile({
   return (
     <Card
       className={cn(
-        "relative overflow-hidden border-border/60 bg-card/70 backdrop-blur-sm smooth-transition hover:-translate-y-1 hover:shadow-warm",
+        "group relative overflow-hidden border-border/60 bg-card/70 backdrop-blur-md smooth-transition hover:-translate-y-1 hover:border-primary/30 hover:shadow-warm-lg",
         className
       )}
     >
       <div className={cn("absolute inset-x-0 top-0 h-1", toneBar[tone])} />
+      <div
+        className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-primary/10 blur-2xl opacity-0 smooth-transition group-hover:opacity-100"
+        aria-hidden="true"
+      />
       <CardContent className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
@@ -57,7 +61,7 @@ export function StatTile({
           {icon && (
             <div
               className={cn(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
+                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl smooth-transition group-hover:scale-110",
                 toneRing[tone]
               )}
             >
