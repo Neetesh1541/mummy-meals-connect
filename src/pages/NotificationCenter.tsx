@@ -12,16 +12,26 @@ import {
   ChevronRight,
   ArrowRight,
   Clock,
+  Download,
+  FileText,
+  Package,
+  Bike,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
-import { useNotificationHistory } from "@/hooks/useNotificationHistory";
+import {
+  useNotificationHistory,
+  type NotificationCategory,
+} from "@/hooks/useNotificationHistory";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNotificationPreferences } from "@/hooks/useNotificationPreferences";
 import { PushPermissionDialog } from "@/components/PushPermissionDialog";
 import { Link, useNavigate } from "react-router-dom";
+import { exportNotificationsCsv, exportNotificationsPdf } from "@/lib/notification-export";
+import { useToast } from "@/hooks/use-toast";
 
 const PAGE_SIZE = 10;
 
@@ -39,21 +49,48 @@ const CHANNEL_LABEL: Record<string, string> = {
   silenced: "Silenced",
 };
 
+type TypeFilter = "all" | NotificationCategory;
+
+const TYPE_TABS: { value: TypeFilter; label: string; icon: typeof Bell }[] = [
+  { value: "all", label: "All types", icon: Bell },
+  { value: "order", label: "Order", icon: Package },
+  { value: "delivery", label: "Delivery", icon: Bike },
+  { value: "system", label: "System", icon: Settings2 },
+];
+
+const TYPE_ICON: Record<string, typeof Bell> = {
+  order: Package,
+  delivery: Bike,
+  system: Settings2,
+};
+
 export default function NotificationCenter() {
   const { items, unreadCount, markRead, markAllRead, removeItem, clearAll } =
     useNotificationHistory();
   const { permission, isSupported } = useNotifications();
   const { isSnoozed, snoozeMinutesLeft, snooze, clearSnooze } = useNotificationPreferences();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: items.length, order: 0, delivery: 0, system: 0 };
+    items.forEach((i) => {
+      const key = i.category ?? "system";
+      counts[key] = (counts[key] ?? 0) + 1;
+    });
+    return counts;
+  }, [items]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((i) => {
       if (filter === "unread" && i.read) return false;
+      if (typeFilter !== "all" && (i.category ?? "system") !== typeFilter) return false;
       if (!q) return true;
       return (
         i.title.toLowerCase().includes(q) ||
@@ -61,13 +98,13 @@ export default function NotificationCenter() {
         (i.statusKey ?? "").toLowerCase().includes(q)
       );
     });
-  }, [items, filter, query]);
+  }, [items, filter, typeFilter, query]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   useEffect(() => {
     setPage(1);
-  }, [query, filter]);
+  }, [query, filter, typeFilter]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -80,6 +117,28 @@ export default function NotificationCenter() {
     markRead(id);
     if (link) navigate(link);
   };
+
+  const handleExport = async (kind: "csv" | "pdf") => {
+    if (filtered.length === 0) {
+      toast({ title: "Nothing to export", description: "No alerts match the current filters." });
+      return;
+    }
+    try {
+      if (kind === "csv") exportNotificationsCsv(filtered);
+      else await exportNotificationsPdf(filtered);
+      toast({
+        title: `Exported ${filtered.length} alert${filtered.length === 1 ? "" : "s"}`,
+        description: `Your ${kind.toUpperCase()} download has started.`,
+      });
+    } catch {
+      toast({
+        title: "Export failed",
+        description: "We couldn't build the file. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   return (
     <DashboardShell
