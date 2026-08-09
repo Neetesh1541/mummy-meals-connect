@@ -416,7 +416,9 @@ export default function NotificationCenter() {
                   </Button>
                 </div>
               </li>
-            ))}
+              );
+            })}
+
           </ul>
         )}
 
