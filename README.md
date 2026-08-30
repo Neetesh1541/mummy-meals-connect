@@ -1,74 +1,59 @@
-Mummy Meals..
+# 🍱 Mummy Meals Connect
 
-Taste of Home, Every Day!
+**Taste of home, every day.**
 
-Mummy Meals is a food delivery platform designed especially for bachelors, students, and working professionals who miss healthy, fresh, home-cooked food. It connects local moms to customers, allowing them to deliver nutritious, hygienic, and tasty meals straight from their kitchens.
+Mummy Meals Connect is a food-delivery concept focused on connecting students, bachelors, and working professionals with fresh, home-style meals prepared by local home chefs.
 
-🚀 Features
-Home-cooked meals prepared by local moms
+## ✨ Core Features
 
-Rotating daily menu
+- 🏠 Home-cooked meals from local cooks
+- 📅 Rotating daily menus
+- 🍛 Lunch and dinner plans
+- 🔄 One-time and subscription ordering
+- 📍 Delivery and location support
+- 📦 Order tracking
+- 💳 Online payment support
+- 📱 Web and mobile-friendly experience
 
-Lunch and dinner plans
+## 🎯 Problem
 
-One-time and subscription-based ordering
+People living away from home often struggle to find affordable, hygienic, and consistent home-style food. Mummy Meals aims to provide a convenient alternative to restaurant food and traditional mess services.
 
-Delivery through partners or self-delivery by moms
+## 💡 Value Proposition
 
-Easy ordering via a web or mobile app
+- Authentic home-style meals
+- Flexible meal plans
+- Opportunities for local home chefs
+- Personalized food preferences
+- Convenient ordering and delivery
 
-Real-time order tracking
+## 🛠️ Technology
 
-Secure online payments
+The project is designed as a modern web application. Its exact framework and services may evolve as development continues.
 
-💡 Problem Statement
-Many students and professionals living away from home struggle to find healthy, hygienic, and tasty meals. They often end up relying on unhealthy restaurant food or mess facilities. Mummy Meals addresses this problem by connecting them to local moms who cook fresh, home-style food.
+## 🚀 Getting Started
 
-🎯 Unique Selling Proposition (USP)
-100% authentic home-cooked food
-
-Emotional connection with “taste of home”
-
-Empowerment of local women who earn through cooking
-
-Personalized meals and dietary options
-
-🛠 Tech Stack
-Frontend: React.js / Next.js
-
-Backend: Node.js / Django / Flask (choose according to your needs)
-
-Database: MongoDB / PostgreSQL
-
-Payment Integration: Razorpay / Stripe
-
-Hosting: AWS / Vercel / Netlify
-
-📦 Installation
-bash
-Copy
-Edit
-git clone https://github.com/<your-username>/mummy-meals.git
-cd mummy-meals
+```bash
+git clone https://github.com/Neetesh1541/mummy-meals-connect.git
+cd mummy-meals-connect
 npm install
 npm start
-📱 Screenshots
-(Add your app screenshots here to showcase the design and functionality)
+```
 
-🤝 Contributing
-Fork this repository
+Configure environment variables required by the current application before running production integrations.
 
-Create a new feature branch (git checkout -b feature/my-feature)
+## 🌐 Demo
 
-Commit your changes (git commit -m 'Add new feature')
+https://mummy-meals-connect.vercel.app/
 
-Push to the branch (git push origin feature/my-feature)
+## 🤝 Contributing
 
-Submit a Pull Request..
+Fork the repository, create a feature branch, make your changes, and open a pull request with a clear description.
 
-📧 Contact
-Email: mummymeals@gmail.com
+## 📄 License
 
-Demo Link- https://mummy-meals-connect.vercel.app/
-📄 License
-This project is licensed under the MIT License..
+MIT License.
+
+## 👨‍💻 Author
+
+Built by **Neetesh Sharma**.
