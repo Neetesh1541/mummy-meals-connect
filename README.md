@@ -1,4 +1,4 @@
-# 🍱 Mummy Meals Connect..
+# 🍱 Mummy Meals Connect...
 
 **Taste of home, every day.**
 
